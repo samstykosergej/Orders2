@@ -243,7 +243,7 @@ async function loadFromGist() {
             headers: { 'Authorization': `token ${TOKEN}` }
         });
         const gist = await response.json();
-        const content = gist.files['orders.json']?.content;
+        const content = gist.files['orders2.json']?.content;
         if (content) {
             const remoteOrders = JSON.parse(content);
             if (Array.isArray(remoteOrders) && remoteOrders.length > 0) {
