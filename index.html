@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Мои заказы — Мебель</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Golos+Text:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0d0f12;--surface:#161a1f;--surface2:#1e232a;--surface3:#252c35;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --accent:#4f9cf9;--green:#3ecf8e;--red:#f96b4f;--amber:#f9c74f;--purple:#b48ef9;
+  --text:#f0f2f5;--muted:#6b7685;--radius:14px;
+  --font-d:'Unbounded',sans-serif;--font-b:'Golos Text',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;padding-bottom:100px;}
+.nav{display:flex;gap:2px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.nav-btn{flex:1;padding:14px 8px;font-size:11px;font-family:var(--font-d);letter-spacing:0.05em;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;}
+.nav-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.page{display:none;padding:1rem;}.page.active{display:block;}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;}
+.page-title{font-family:var(--font-d);font-size:16px;font-weight:700;}
+.btn-add{background:var(--accent);color:#fff;border:none;border-radius:50px;padding:8px 18px;font-size:13px;font-family:var(--font-b);font-weight:500;cursor:pointer;}
+.order-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:10px;cursor:pointer;}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.card-name{font-size:15px;font-weight:500;}
+.card-status{font-size:11px;padding:3px 10px;border-radius:50px;font-weight:500;}
+.s-new{background:rgba(79,156,249,0.15);color:var(--accent);}
+.s-work{background:rgba(249,199,79,0.15);color:var(--amber);}
+.s-done{background:rgba(62,207,142,0.15);color:var(--green);}
+.card-items{font-size:12px;color:var(--muted);margin-bottom:8px;}
+.card-bottom{display:flex;justify-content:space-between;font-size:12px;}
+.card-bottom .label{color:var(--muted);}
+.profit{font-family:var(--font-d);font-size:13px;font-weight:600;}
+.profit.pos{color:var(--green);}.profit.neg{color:var(--red);}
+.card-debts{display:flex;gap:8px;margin-top:7px;flex-wrap:wrap;}
+.debt-badge{font-size:11px;padding:2px 9px;border-radius:50px;font-weight:500;}
+.db-client{background:rgba(249,199,79,0.12);color:var(--amber);border:1px solid rgba(249,199,79,0.2);}
+.db-master{background:rgba(180,142,249,0.12);color:var(--purple);border:1px solid rgba(180,142,249,0.2);}
+.db-overdue{background:rgba(249,107,79,0.12);color:var(--red);border:1px solid rgba(249,107,79,0.2);}
+.db-soon{background:rgba(249,199,79,0.12);color:var(--amber);border:1px solid rgba(249,199,79,0.2);}
+.db-deadline{background:rgba(62,207,142,0.1);color:var(--green);border:1px solid rgba(62,207,142,0.2);}
+.empty{text-align:center;padding:3rem 1rem;color:var(--muted);font-size:14px;line-height:1.7;}
+.empty span{display:block;font-size:32px;margin-bottom:1rem;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:flex-end;}
+.overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:1.5rem 1rem 2rem;}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:4px;margin:0 auto 1.25rem;}
+.modal-title{font-family:var(--font-d);font-size:15px;font-weight:700;margin-bottom:1.25rem;}
+.field{margin-bottom:1rem;}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;}
+.field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-size:15px;font-family:var(--font-b);outline:none;-webkit-appearance:none;}
+.field textarea{min-height:70px;resize:none;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);}
+.field select option{background:var(--surface2);}
+.field-hint{font-size:11px;color:var(--muted);margin-top:5px;}
+.section-label{font-size:11px;font-family:var(--font-d);letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;margin:1.25rem 0 0.75rem;display:flex;justify-content:space-between;align-items:center;}
+.btn-small{background:var(--surface3);border:1px solid var(--border);color:var(--accent);font-size:12px;padding:5px 12px;border-radius:50px;cursor:pointer;font-family:var(--font-b);}
+.row-item{background:var(--surface2);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;}
+.row-item-name{font-size:14px;}.row-item-detail{font-size:12px;color:var(--muted);}
+.row-del{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:0 4px;opacity:0.7;}
+.add-row{background:var(--surface3);border:1px dashed var(--border2);border-radius:10px;padding:12px;margin-bottom:8px;}
+.add-row-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.add-row-grid3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;margin-bottom:8px;}
+.add-row input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;color:var(--text);font-size:14px;font-family:var(--font-b);width:100%;outline:none;}
+.add-row input:focus{border-color:var(--accent);}
+.add-row-full{margin-bottom:8px;}
+.add-row-full input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;color:var(--text);font-size:14px;font-family:var(--font-b);width:100%;outline:none;}
+.btn-confirm{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;width:100%;cursor:pointer;font-family:var(--font-b);font-weight:500;}
+.total-row{background:var(--surface3);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
+.total-row span{color:var(--muted);}
+.total-row strong{font-family:var(--font-d);}
+.debt-row-amber{background:rgba(249,199,79,0.06);border:1px solid rgba(249,199,79,0.18);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;font-size:13px;margin-top:4px;margin-bottom:6px;}
+.debt-row-purple{background:rgba(180,142,249,0.06);border:1px solid rgba(180,142,249,0.18);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;font-size:13px;margin-top:4px;margin-bottom:6px;}
+.debt-row-amber span,.debt-row-purple span{color:var(--muted);}
+.btn-save{width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:16px;font-size:15px;font-family:var(--font-d);font-weight:600;cursor:pointer;margin-top:1.5rem;}
+.btn-danger{width:100%;background:rgba(249,107,79,0.12);color:var(--red);border:1px solid rgba(249,107,79,0.25);border-radius:12px;padding:14px;font-size:14px;font-family:var(--font-b);cursor:pointer;margin-top:10px;}
+.detail-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:10px;}
+.detail-section-title{font-size:11px;font-family:var(--font-d);letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;}
+.detail-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:14px;}
+.detail-row:last-child{border-bottom:none;}
+.detail-row .dr-label{color:var(--muted);}.detail-row .dr-val{font-weight:500;}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
+.sum-card{background:var(--surface2);border-radius:10px;padding:10px 12px;text-align:center;}
+.sum-card .sc-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;}
+.sum-card .sc-val{font-family:var(--font-d);font-size:16px;font-weight:700;}
+.sc-val.green{color:var(--green);}.sc-val.red{color:var(--red);}.sc-val.blue{color:var(--accent);}.sc-val.amber{color:var(--amber);}.sc-val.purple{color:var(--purple);}
+.prog-wrap{margin-top:8px;}
+.prog-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px;}
+.prog-track{height:6px;background:var(--surface3);border-radius:6px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:6px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.stat-label{font-size:13px;color:var(--muted);}
+.stat-val{font-family:var(--font-d);font-size:18px;font-weight:700;}
+.stat-val.green{color:var(--green);}.stat-val.blue{color:var(--accent);}.stat-val.amber{color:var(--amber);}.stat-val.red{color:var(--red);}.stat-val.purple{color:var(--purple);}
+.back-btn{background:none;border:none;color:var(--accent);font-size:14px;font-family:var(--font-b);cursor:pointer;padding:0;display:flex;align-items:center;gap:4px;margin-bottom:1rem;}
+.sync-status{display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 12px;border-radius:50px;margin-bottom:1rem;}
+.sync-status.ok{background:rgba(62,207,142,0.1);color:var(--green);border:1px solid rgba(62,207,142,0.2);}
+.sync-status.err{background:rgba(249,107,79,0.1);color:var(--red);border:1px solid rgba(249,107,79,0.2);}
+.sync-status.loading{background:rgba(79,156,249,0.1);color:var(--accent);border:1px solid rgba(79,156,249,0.2);}
+.sync-status.idle{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.sync-btn{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:12px;padding:14px;font-size:14px;font-family:var(--font-b);font-weight:500;color:var(--text);cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.sync-btn:active{opacity:0.8;}
+.sync-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.sync-btn.danger{background:rgba(249,107,79,0.1);border-color:rgba(249,107,79,0.3);color:var(--red);}
+.sync-info{background:var(--surface2);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:12px;}
+.sync-info strong{color:var(--text);}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('orders')">ЗАКАЗЫ</button>
+  <button class="nav-btn" onclick="showPage('stats')">ИТОГИ</button>
+  <button class="nav-btn" onclick="showPage('sync')">☁️ СИНХ</button>
+</nav>
+
+<div class="page active" id="page-orders">
+  <div class="page-header">
+    <div class="page-title">Мои заказы</div>
+    <button class="btn-add" onclick="openNew()">+ Новый</button>
+  </div>
+  <div id="orders-list"></div>
+</div>
+
+<div class="page" id="page-stats">
+  <div class="page-header"><div class="page-title">Итоги</div></div>
+  <div id="stats-content"></div>
+</div>
+
+<div class="page" id="page-detail">
+  <button class="back-btn" onclick="showPage('orders')">← Назад</button>
+  <div id="detail-content"></div>
+</div>
+
+<div class="page" id="page-sync">
+  <div class="page-header"><div class="page-title">Синхронизация</div></div>
+
+  <div id="sync-status-bar" class="sync-status idle"><div class="sync-dot"></div><span id="sync-status-text">Не настроено</span></div>
+
+  <div class="sync-info">
+    Данные хранятся в <strong>GitHub Gist</strong> — приватном файле в вашем аккаунте.<br>
+    Токен вводится один раз и сохраняется в браузере на этом устройстве.<br>
+    <strong>Токен нужен с правом gist</strong> (Settings → Developer settings → Tokens).
+  </div>
+
+  <div class="field">
+    <label>GitHub токен</label>
+    <input type="password" id="s-token" placeholder="ghp_xxxxxxxxxxxxxxxx" oninput="syncSettingsChanged()">
+  </div>
+  <div class="field">
+    <label>Gist ID <span style="font-weight:400;text-transform:none;font-size:11px;">(оставьте пустым чтобы создать новый)</span></label>
+    <input type="text" id="s-gist-id" placeholder="Например: a1b2c3d4e5f6..." oninput="syncSettingsChanged()">
+  </div>
+
+  <button class="sync-btn primary" onclick="syncSave()">☁️ Сохранить в облако</button>
+  <button class="sync-btn" onclick="syncLoad()">⬇️ Загрузить из облака</button>
+  <button class="sync-btn" onclick="saveSettings()">💾 Сохранить настройки</button>
+  <button class="sync-btn danger" onclick="clearSettings()">🗑 Сбросить настройки</button>
+
+  <div id="sync-log" style="margin-top:1rem;font-size:12px;color:var(--muted);line-height:1.8;"></div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeOverlay(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">Новый заказ</div>
+
+    <div class="field">
+      <label>Клиент / название заказа</label>
+      <input type="text" id="f-client" placeholder="Например: Иванов — кухня">
+    </div>
+    <div class="field">
+      <label>Статус</label>
+      <select id="f-status">
+        <option value="new">Новый</option>
+        <option value="work">В работе</option>
+        <option value="done">Выполнен</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Дата начала</label>
+      <input type="date" id="f-date">
+    </div>
+    <div class="field">
+      <label>Дата окончания (срок сдачи)</label>
+      <input type="date" id="f-date-end">
+    </div>
+    <div class="field">
+      <label>Фактическая дата сдачи</label>
+      <input type="date" id="f-date-actual">
+    </div>
+    <div class="field">
+      <label>Комментарий</label>
+      <textarea id="f-note" placeholder="Размеры, пожелания клиента..."></textarea>
+    </div>
+
+    <!-- ПОЗИЦИИ -->
+    <div class="section-label">Позиции заказа <button class="btn-small" onclick="showAddItem()">+ добавить</button></div>
+    <div id="items-list"></div>
+    <div id="add-item-form" style="display:none">
+      <div class="add-row">
+        <div class="add-row-grid3">
+          <input type="text" id="ai-name" placeholder="Наименование">
+          <input type="number" id="ai-qty" placeholder="Кол-во">
+          <input type="number" id="ai-price" placeholder="Цена ₽">
+        </div>
+        <button class="btn-confirm" onclick="addItem()">Добавить позицию</button>
+      </div>
+    </div>
+    <div id="items-total-block"></div>
+
+    <!-- ОПЛАТА ОТ КЛИЕНТА -->
+    <div class="section-label">Оплата от клиента <button class="btn-small" onclick="showAddClientPay()">+ оплата</button></div>
+    <div id="client-pays-list"></div>
+    <div id="add-client-pay-form" style="display:none">
+      <div class="add-row">
+        <div class="add-row-grid">
+          <input type="number" id="acp-amount" placeholder="Сумма ₽">
+          <input type="date" id="acp-date">
+        </div>
+        <div class="add-row-full"><input type="text" id="acp-note" placeholder="Примечание (предоплата, остаток...)"></div>
+        <button class="btn-confirm" onclick="addClientPay()">Добавить</button>
+      </div>
+    </div>
+    <div id="client-debt-block"></div>
+
+    <!-- МАТЕРИАЛЫ -->
+    <div class="section-label">Материалы <button class="btn-small" onclick="showAddMaterial()">+ добавить</button></div>
+    <div id="materials-list"></div>
+    <div id="add-material-form" style="display:none">
+      <div class="add-row">
+        <div class="add-row-grid">
+          <input type="text" id="am-name" placeholder="Название материала">
+          <input type="number" id="am-cost" placeholder="Сумма ₽">
+        </div>
+        <div class="add-row-grid">
+          <input type="date" id="am-date">
+          <input type="text" id="am-note" placeholder="Примечание">
+        </div>
+        <button class="btn-confirm" onclick="addMaterial()">Добавить</button>
+      </div>
+    </div>
+
+    <!-- МАСТЕР -->
+    <div class="section-label">Выплаты мастеру <button class="btn-small" onclick="showAddPayment()">+ выплата</button></div>
+    <div class="field">
+      <label>Полная сумма договора с мастером (₽)</label>
+      <input type="number" id="f-master-total" placeholder="Введите итоговую сумму за работу" oninput="renderMasterDebt()">
+      <div class="field-hint">Укажите полную сумму — будет видно сколько ещё осталось выплатить</div>
+    </div>
+    <div id="payments-list"></div>
+    <div id="add-payment-form" style="display:none">
+      <div class="add-row">
+        <div class="add-row-grid">
+          <input type="number" id="ap-amount" placeholder="Сумма ₽">
+          <input type="date" id="ap-date">
+        </div>
+        <div class="add-row-full"><input type="text" id="ap-note" placeholder="За что (сборка, покраска...)"></div>
+        <button class="btn-confirm" onclick="addPayment()">Добавить</button>
+      </div>
+    </div>
+    <div id="master-debt-block"></div>
+
+    <button class="btn-save" onclick="saveOrder()">Сохранить заказ</button>
+    <button class="btn-danger" id="btn-delete" style="display:none" onclick="deleteOrder()">Удалить заказ</button>
+  </div>
+</div>
+
+<script>
+let orders = JSON.parse(localStorage.getItem('furniture_orders2') || '[]');
+let editingId = null;
+let tempItems=[], tempMats=[], tempPays=[], tempClientPays=[];
+
+function save(){
+  localStorage.setItem('furniture_orders2',JSON.stringify(orders));
+  // Автосохранение в Gist если настроено
+  const s=getSyncSettings();
+  if(s.token && s.gistId) autoSyncSave();
+}
+function fmt(n){return Number(n||0).toLocaleString('ru-RU');}
+function fmtD(d){if(!d)return '';const[y,m,day]=d.split('-');return day+'.'+m+'.'+y;}
+function statusLabel(s){
+  if(s==='new') return '<span class="card-status s-new">Новый</span>';
+  if(s==='work') return '<span class="card-status s-work">В работе</span>';
+  return '<span class="card-status s-done">Выполнен</span>';
+}
+function itemsSum(items){return(items||[]).reduce((s,i)=>s+Number(i.price||0)*Number(i.qty||1),0);}
+function paidSum(arr){return(arr||[]).reduce((s,p)=>s+Number(p.amount||0),0);}
+function orderPrice(o){const it=itemsSum(o.items);return it>0?it:Number(o.price||0);}
+function calcTax(o){
+  // Налог 6% считается от фактически полученных платежей от клиента
+  const received=paidSum(o.clientPayments);
+  // Если платежи не записаны — берём полную сумму заказа
+  return Math.round((received>0?received:orderPrice(o))*0.06);
+}
+function calcProfit(o){return orderPrice(o)-(o.materials||[]).reduce((s,m)=>s+Number(m.cost||0),0)-paidSum(o.payments);}
+function calcProfitAfterTax(o){return calcProfit(o)-calcTax(o);}
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const idx={orders:0,stats:1,sync:2}[name];
+  if(idx>=0) document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  if(name==='orders') renderOrders();
+  if(name==='stats') renderStats();
+  if(name==='sync') loadSyncSettingsToForm();
+}
+
+function renderOrders(){
+  const el=document.getElementById('orders-list');
+  if(!orders.length){el.innerHTML='<div class="empty"><span>📦</span>Заказов пока нет.<br>Нажмите «+ Новый» чтобы добавить.</div>';return;}
+  el.innerHTML=[...orders].sort((a,b)=>(b.date||'')>(a.date||'')?1:-1).map(o=>{
+    const price=orderPrice(o);
+    const profit=calcProfit(o);
+    const profitNet=calcProfitAfterTax(o);
+    const clientDebt=price-paidSum(o.clientPayments);
+    const masterDebt=Number(o.masterTotal||0)-paidSum(o.payments);
+    const items=(o.items||[]).map(i=>i.name).join(', ')||'Без позиций';
+    let badges='';
+    if(clientDebt>0) badges+=`<span class="debt-badge db-client">Клиент должен: ${fmt(clientDebt)} ₽</span>`;
+    if(masterDebt>0) badges+=`<span class="debt-badge db-master">Мастеру должны: ${fmt(masterDebt)} ₽</span>`;
+    if(o.dateEnd && o.status!=='done'){
+      const today=new Date(); today.setHours(0,0,0,0);
+      const end=new Date(o.dateEnd); end.setHours(0,0,0,0);
+      const diff=Math.round((end-today)/(1000*60*60*24));
+      if(diff<0) badges+=`<span class="debt-badge db-overdue">Просрочен на ${Math.abs(diff)} дн.</span>`;
+      else if(diff===0) badges+=`<span class="debt-badge db-overdue">Срок сегодня!</span>`;
+      else if(diff<=3) badges+=`<span class="debt-badge db-soon">Срок через ${diff} дн.</span>`;
+      else badges+=`<span class="debt-badge db-deadline">Сдать: ${fmtD(o.dateEnd)}</span>`;
+    }
+    return `<div class="order-card" onclick="openDetail('${o.id}')">
+      <div class="card-top"><div class="card-name">${o.client}</div>${statusLabel(o.status)}</div>
+      <div class="card-items">${items}</div>
+      <div class="card-bottom">
+        <div><span class="label">Заказ: </span>${fmt(price)} ₽ · ${fmtD(o.date)}</div>
+        <div style="text-align:right;">
+          <div class="profit ${profitNet>=0?'pos':'neg'}">${profitNet>=0?'+':''}${fmt(profitNet)} ₽</div>
+          <div style="font-size:10px;color:var(--muted);">после налога</div>
+        </div>
+      </div>
+      ${badges?`<div class="card-debts">${badges}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function openDetail(id){
+  const o=orders.find(x=>x.id===id);if(!o) return;
+  const price=orderPrice(o);
+  const mats=(o.materials||[]).reduce((s,m)=>s+Number(m.cost||0),0);
+  const paidM=paidSum(o.payments);
+  const masterTotal=Number(o.masterTotal||0);
+  const masterDebt=masterTotal-paidM;
+  const paidC=paidSum(o.clientPayments);
+  const clientDebt=price-paidC;
+  const profit=price-mats-paidM;
+  const tax=Math.round(price*0.06);
+  const profitNet=profit-tax;
+
+  let html=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
+      <div><div style="font-family:var(--font-d);font-size:17px;font-weight:700;">${o.client}</div><div style="margin-top:6px;">${statusLabel(o.status)}</div>${o.date||o.dateEnd||o.dateActual?`<div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.8;">${o.date?'📅 Начало: '+fmtD(o.date)+'<br>':''}${o.dateEnd?'🎯 Срок: '+fmtD(o.dateEnd)+(o.dateActual?'<br>':''):''}${o.dateActual?`✅ Сдан: <span style="color:${o.dateEnd&&o.dateActual>o.dateEnd?'var(--red)':'var(--green)'}">${fmtD(o.dateActual)}${o.dateEnd&&o.dateActual>o.dateEnd?' (с опозданием)':o.dateEnd&&o.dateActual<=o.dateEnd?' (в срок)':''}</span>`:''}</div>`:''}</div>
+      <button class="btn-small" onclick="openEdit('${o.id}')">✏️ Изменить</button>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Финансы</div>
+      <div class="summary-grid">
+        <div class="sum-card"><div class="sc-label">Стоимость заказа</div><div class="sc-val blue">${fmt(price)} ₽</div></div>
+        <div class="sum-card"><div class="sc-label">Материалы</div><div class="sc-val">${fmt(mats)} ₽</div></div>
+        <div class="sum-card"><div class="sc-label">Выплачено мастеру</div><div class="sc-val">${fmt(paidM)} ₽</div></div>
+        <div class="sum-card"><div class="sc-label">Налог УСН 6%</div><div class="sc-val red">−${fmt(tax)} ₽</div></div>
+        <div class="sum-card"><div class="sc-label">Прибыль до налога</div><div class="sc-val ${profit>=0?'green':'red'}">${profit>=0?'+':''}${fmt(profit)} ₽</div></div>
+        <div class="sum-card" style="border:1px solid rgba(62,207,142,0.3);background:rgba(62,207,142,0.06);"><div class="sc-label">Прибыль после налога</div><div class="sc-val ${profitNet>=0?'green':'red'}">${profitNet>=0?'+':''}${fmt(profitNet)} ₽</div></div>
+      </div>
+    </div>`;
+
+  // Оплата от клиента
+  html+=`<div class="detail-section"><div class="detail-section-title">Оплата от клиента</div>`;
+  if(o.clientPayments&&o.clientPayments.length){
+    o.clientPayments.forEach(p=>{
+      const ptax=Math.round(Number(p.amount||0)*0.06);
+      html+=`<div class="detail-row">
+        <span class="dr-label">${p.note||'Оплата'}${p.date?' · '+fmtD(p.date):''}</span>
+        <span class="dr-val" style="text-align:right;">
+          ${fmt(p.amount)} ₽
+          <span style="display:block;font-size:11px;color:var(--red);">−${fmt(ptax)} ₽ налог</span>
+        </span>
+      </div>`;
+    });
+  } else {html+=`<div style="font-size:13px;color:var(--muted);">Оплат не записано</div>`;}
+  html+=`<div class="prog-wrap">
+    <div class="prog-label"><span>Получено: ${fmt(paidC)} ₽</span><span style="color:${clientDebt<=0?'var(--green)':'var(--amber)'}">${clientDebt<=0?'Полностью оплачен ✓':'Осталось: '+fmt(clientDebt)+' ₽'}</span></div>
+    <div class="prog-track"><div class="prog-fill" style="width:${price>0?Math.min(paidC/price*100,100):0}%;background:${clientDebt<=0?'var(--green)':'var(--amber)'};"></div></div>
+  </div></div>`;
+
+  // Позиции
+  if(o.items&&o.items.length){
+    html+=`<div class="detail-section"><div class="detail-section-title">Позиции заказа</div>`;
+    o.items.forEach(i=>{
+      const sum=Number(i.price||0)*Number(i.qty||1);
+      html+=`<div class="detail-row"><span class="dr-label">${i.name} × ${i.qty} шт.</span><span class="dr-val">${i.price?fmt(sum)+' ₽':'-'}</span></div>`;
+    });
+    if(itemsSum(o.items)>0) html+=`<div class="detail-row" style="font-weight:600;"><span class="dr-label">Итого</span><span class="dr-val" style="color:var(--accent);">${fmt(itemsSum(o.items))} ₽</span></div>`;
+    html+=`</div>`;
+  }
+
+  // Материалы
+  if(o.materials&&o.materials.length){
+    html+=`<div class="detail-section"><div class="detail-section-title">Материалы</div>`;
+    o.materials.forEach(m=>{html+=`<div class="detail-row"><span class="dr-label">${m.name}${m.note?' · '+m.note:''}${m.date?' · '+fmtD(m.date):''}</span><span class="dr-val">${fmt(m.cost)} ₽</span></div>`;});
+    html+=`</div>`;
+  }
+
+  // Выплаты мастеру
+  html+=`<div class="detail-section"><div class="detail-section-title">Выплаты мастеру</div>`;
+  if(o.payments&&o.payments.length){
+    o.payments.forEach(p=>{html+=`<div class="detail-row"><span class="dr-label">${p.note||'Выплата'}${p.date?' · '+fmtD(p.date):''}</span><span class="dr-val">${fmt(p.amount)} ₽</span></div>`;});
+  } else {html+=`<div style="font-size:13px;color:var(--muted);">Выплат не записано</div>`;}
+  if(masterTotal>0){
+    html+=`<div class="prog-wrap">
+      <div class="prog-label"><span>Выплачено: ${fmt(paidM)} ₽ из ${fmt(masterTotal)} ₽</span><span style="color:${masterDebt<=0?'var(--green)':'var(--purple)'}">${masterDebt<=0?'Полностью выплачено ✓':'Осталось: '+fmt(masterDebt)+' ₽'}</span></div>
+      <div class="prog-track"><div class="prog-fill" style="width:${Math.min(paidM/masterTotal*100,100)}%;background:${masterDebt<=0?'var(--green)':'var(--purple)'};"></div></div>
+    </div>`;
+  }
+  html+=`</div>`;
+
+  if(o.note) html+=`<div class="detail-section"><div class="detail-section-title">Комментарий</div><div style="font-size:14px;line-height:1.6;">${o.note}</div></div>`;
+
+  document.getElementById('detail-content').innerHTML=html;
+  showPage('detail');
+}
+
+function renderStats(){
+  const el=document.getElementById('stats-content');
+  if(!orders.length){el.innerHTML='<div class="empty"><span>📊</span>Нет данных.</div>';return;}
+  const total=orders.reduce((s,o)=>s+orderPrice(o),0);
+  const totalMats=orders.reduce((s,o)=>s+(o.materials||[]).reduce((m,x)=>m+Number(x.cost||0),0),0);
+  const totalPays=orders.reduce((s,o)=>s+paidSum(o.payments),0);
+  const totalTax=orders.reduce((s,o)=>s+calcTax(o),0);
+  const totalProfit=total-totalMats-totalPays;
+  const totalProfitNet=totalProfit-totalTax;
+  const clientDebtTotal=orders.reduce((s,o)=>s+Math.max(0,orderPrice(o)-paidSum(o.clientPayments)),0);
+  const masterDebtTotal=orders.reduce((s,o)=>s+Math.max(0,Number(o.masterTotal||0)-paidSum(o.payments)),0);
+  const done=orders.filter(o=>o.status==='done').length;
+  const inWork=orders.filter(o=>o.status==='work').length;
+  el.innerHTML=`
+    <div class="stat-card"><div class="stat-label">Всего заказов</div><div class="stat-val blue">${orders.length}</div></div>
+    <div class="stat-card"><div class="stat-label">В работе</div><div class="stat-val amber">${inWork}</div></div>
+    <div class="stat-card"><div class="stat-label">Выполнено</div><div class="stat-val green">${done}</div></div>
+    <div class="stat-card"><div class="stat-label">Общая выручка</div><div class="stat-val blue">${fmt(total)} ₽</div></div>
+    <div class="stat-card"><div class="stat-label">Расходы на материалы</div><div class="stat-val">${fmt(totalMats)} ₽</div></div>
+    <div class="stat-card"><div class="stat-label">Выплачено мастерам</div><div class="stat-val">${fmt(totalPays)} ₽</div></div>
+    <div class="stat-card"><div class="stat-label">Налог УСН 6%</div><div class="stat-val red">−${fmt(totalTax)} ₽</div></div>
+    <div class="stat-card"><div class="stat-label">Прибыль до налога</div><div class="stat-val ${totalProfit>=0?'green':'red'}">${totalProfit>=0?'+':''}${fmt(totalProfit)} ₽</div></div>
+    <div class="stat-card" style="border-color:rgba(62,207,142,0.3);background:rgba(62,207,142,0.04);"><div class="stat-label">Прибыль после налога</div><div class="stat-val ${totalProfitNet>=0?'green':'red'}">${totalProfitNet>=0?'+':''}${fmt(totalProfitNet)} ₽</div></div>
+    <div class="stat-card"><div class="stat-label">Долг клиентов</div><div class="stat-val ${clientDebtTotal>0?'amber':'green'}">${clientDebtTotal>0?fmt(clientDebtTotal)+' ₽':'Нет долгов'}</div></div>
+    <div class="stat-card"><div class="stat-label">Долг мастерам</div><div class="stat-val ${masterDebtTotal>0?'purple':'green'}">${masterDebtTotal>0?fmt(masterDebtTotal)+' ₽':'Нет долгов'}</div></div>
+  `;
+}
+
+function openNew(){
+  editingId=null;tempItems=[];tempMats=[];tempPays=[];tempClientPays=[];
+  document.getElementById('modal-title').textContent='Новый заказ';
+  document.getElementById('f-client').value='';
+  document.getElementById('f-status').value='new';
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('f-date-end').value='';
+  document.getElementById('f-date-actual').value='';
+  document.getElementById('f-note').value='';
+  document.getElementById('f-master-total').value='';
+  document.getElementById('btn-delete').style.display='none';
+  renderTempLists();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function openEdit(id){
+  const o=orders.find(x=>x.id===id);if(!o) return;
+  editingId=id;
+  tempItems=JSON.parse(JSON.stringify(o.items||[]));
+  tempMats=JSON.parse(JSON.stringify(o.materials||[]));
+  tempPays=JSON.parse(JSON.stringify(o.payments||[]));
+  tempClientPays=JSON.parse(JSON.stringify(o.clientPayments||[]));
+  document.getElementById('modal-title').textContent='Редактировать';
+  document.getElementById('f-client').value=o.client||'';
+  document.getElementById('f-status').value=o.status||'new';
+  document.getElementById('f-date').value=o.date||'';
+  document.getElementById('f-date-end').value=o.dateEnd||'';
+  document.getElementById('f-date-actual').value=o.dateActual||'';
+  document.getElementById('f-note').value=o.note||'';
+  document.getElementById('f-master-total').value=o.masterTotal||'';
+  document.getElementById('btn-delete').style.display='block';
+  renderTempLists();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeOverlay(e){if(e.target===document.getElementById('overlay')) document.getElementById('overlay').classList.remove('open');}
+
+function saveOrder(){
+  const client=document.getElementById('f-client').value.trim();
+  if(!client){alert('Введите название заказа');return;}
+  const iTotal=itemsSum(tempItems);
+  const order={
+    id:editingId||Date.now().toString(),
+    client,price:iTotal,
+    status:document.getElementById('f-status').value,
+    date:document.getElementById('f-date').value,
+    dateEnd:document.getElementById('f-date-end').value,
+    dateActual:document.getElementById('f-date-actual').value,
+    note:document.getElementById('f-note').value.trim(),
+    masterTotal:document.getElementById('f-master-total').value||0,
+    items:[...tempItems],materials:[...tempMats],payments:[...tempPays],clientPayments:[...tempClientPays],
+  };
+  if(editingId){orders[orders.findIndex(x=>x.id===editingId)]=order;}
+  else{orders.push(order);}
+  save();
+  document.getElementById('overlay').classList.remove('open');
+  showPage('orders');
+}
+
+function deleteOrder(){
+  if(!confirm('Удалить этот заказ?')) return;
+  orders=orders.filter(x=>x.id!==editingId);save();
+  document.getElementById('overlay').classList.remove('open');
+  showPage('orders');
+}
+
+function renderTempLists(){
+  const iTotal=itemsSum(tempItems);
+  document.getElementById('items-list').innerHTML=tempItems.map((it,i)=>
+    `<div class="row-item">
+      <div><div class="row-item-name">${it.name} × ${it.qty} шт.</div><div class="row-item-detail">${it.price?fmt(Number(it.price)*Number(it.qty))+' ₽':''}</div></div>
+      <button class="row-del" onclick="removeItem(${i})">×</button>
+    </div>`).join('');
+  document.getElementById('items-total-block').innerHTML=iTotal>0
+    ?`<div class="total-row"><span>Итого по позициям</span><strong style="color:var(--accent)">${fmt(iTotal)} ₽</strong></div>`:'';
+
+  document.getElementById('client-pays-list').innerHTML=tempClientPays.map((p,i)=>
+    `<div class="row-item">
+      <div><div class="row-item-name">${p.note||'Оплата'}</div><div class="row-item-detail">${fmt(p.amount)} ₽${p.date?' · '+fmtD(p.date):''}</div></div>
+      <button class="row-del" onclick="removeClientPay(${i})">×</button>
+    </div>`).join('');
+  renderClientDebt();
+
+  document.getElementById('materials-list').innerHTML=tempMats.map((m,i)=>
+    `<div class="row-item">
+      <div><div class="row-item-name">${m.name}</div><div class="row-item-detail">${fmt(m.cost)} ₽${m.date?' · '+fmtD(m.date):''}${m.note?' · '+m.note:''}</div></div>
+      <button class="row-del" onclick="removeMat(${i})">×</button>
+    </div>`).join('');
+
+  document.getElementById('payments-list').innerHTML=tempPays.map((p,i)=>
+    `<div class="row-item">
+      <div><div class="row-item-name">${p.note||'Выплата'}</div><div class="row-item-detail">${fmt(p.amount)} ₽${p.date?' · '+fmtD(p.date):''}</div></div>
+      <button class="row-del" onclick="removePay(${i})">×</button>
+    </div>`).join('');
+  renderMasterDebt();
+}
+
+function renderClientDebt(){
+  const iTotal=itemsSum(tempItems);
+  const paid=paidSum(tempClientPays);
+  const debt=iTotal-paid;
+  const el=document.getElementById('client-debt-block');
+  if(iTotal>0){
+    el.innerHTML=`<div class="debt-row-amber"><span>Получено от клиента: ${fmt(paid)} ₽</span><strong style="color:${debt<=0?'var(--green)':'var(--amber)'}">${debt<=0?'Полностью оплачен ✓':'Осталось '+fmt(debt)+' ₽'}</strong></div>`;
+  } else {el.innerHTML='';}
+}
+
+function renderMasterDebt(){
+  const mt=Number(document.getElementById('f-master-total').value||0);
+  const paid=paidSum(tempPays);
+  const debt=mt-paid;
+  const el=document.getElementById('master-debt-block');
+  if(mt>0){
+    el.innerHTML=`<div class="debt-row-purple"><span>Выплачено: ${fmt(paid)} ₽ из ${fmt(mt)} ₽</span><strong style="color:${debt<=0?'var(--green)':'var(--purple)'}">${debt<=0?'Полностью выплачено ✓':'Осталось '+fmt(debt)+' ₽'}</strong></div>`;
+  } else {el.innerHTML='';}
+}
+
+function showAddItem(){document.getElementById('add-item-form').style.display='block';document.getElementById('ai-name').focus();}
+function showAddClientPay(){document.getElementById('add-client-pay-form').style.display='block';document.getElementById('acp-amount').focus();}
+function showAddMaterial(){document.getElementById('add-material-form').style.display='block';document.getElementById('am-name').focus();}
+function showAddPayment(){document.getElementById('add-payment-form').style.display='block';document.getElementById('ap-amount').focus();}
+
+function addItem(){
+  const name=document.getElementById('ai-name').value.trim();
+  if(!name) return;
+  tempItems.push({name,qty:document.getElementById('ai-qty').value||1,price:document.getElementById('ai-price').value||0});
+  document.getElementById('ai-name').value='';document.getElementById('ai-qty').value='';document.getElementById('ai-price').value='';
+  document.getElementById('add-item-form').style.display='none';renderTempLists();
+}
+function addClientPay(){
+  const amount=document.getElementById('acp-amount').value;if(!amount) return;
+  tempClientPays.push({amount,date:document.getElementById('acp-date').value,note:document.getElementById('acp-note').value.trim()});
+  document.getElementById('acp-amount').value='';document.getElementById('acp-date').value='';document.getElementById('acp-note').value='';
+  document.getElementById('add-client-pay-form').style.display='none';renderTempLists();
+}
+function addMaterial(){
+  const name=document.getElementById('am-name').value.trim();if(!name) return;
+  tempMats.push({name,cost:document.getElementById('am-cost').value||0,date:document.getElementById('am-date').value,note:document.getElementById('am-note').value.trim()});
+  document.getElementById('am-name').value='';document.getElementById('am-cost').value='';document.getElementById('am-date').value='';document.getElementById('am-note').value='';
+  document.getElementById('add-material-form').style.display='none';renderTempLists();
+}
+function addPayment(){
+  const amount=document.getElementById('ap-amount').value;if(!amount) return;
+  tempPays.push({amount,date:document.getElementById('ap-date').value,note:document.getElementById('ap-note').value.trim()});
+  document.getElementById('ap-amount').value='';document.getElementById('ap-date').value='';document.getElementById('ap-note').value='';
+  document.getElementById('add-payment-form').style.display='none';renderTempLists();
+}
+function removeItem(i){tempItems.splice(i,1);renderTempLists();}
+function removeClientPay(i){tempClientPays.splice(i,1);renderTempLists();}
+function removeMat(i){tempMats.splice(i,1);renderTempLists();}
+function removePay(i){tempPays.splice(i,1);renderTempLists();}
+
+// ---- СИНХРОНИЗАЦИЯ ЧЕРЕЗ GITHUB GIST ----
+let autoSyncTimer=null;
+let syncIndicatorEl=null;
+
+function showSyncIndicator(state){
+  // state: 'saving' | 'ok' | 'err'
+  const btn=document.querySelectorAll('.nav-btn')[2];
+  if(state==='saving') btn.textContent='⏳ СИНХ';
+  else if(state==='ok') btn.textContent='✅ СИНХ';
+  else if(state==='err') btn.textContent='❌ СИНХ';
+  else btn.textContent='☁️ СИНХ';
+  if(state==='ok'||state==='err'){
+    setTimeout(()=>btn.textContent='☁️ СИНХ', 3000);
+  }
+}
+
+function autoSyncSave(){
+  // Дебаунс — ждём 1.5 сек после последнего изменения
+  clearTimeout(autoSyncTimer);
+  showSyncIndicator('saving');
+  autoSyncTimer=setTimeout(async()=>{
+    const s=getSyncSettings();
+    if(!s.token||!s.gistId) return;
+    try {
+      const content=JSON.stringify(orders,null,2);
+      const resp=await fetch(`https://api.github.com/gists/${s.gistId}`,{
+        method:'PATCH',
+        headers:{'Authorization':'token '+s.token,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
+        body:JSON.stringify({files:{'orders.json':{content}}})
+      });
+      if(!resp.ok) throw new Error(resp.status);
+      showSyncIndicator('ok');
+      syncLog('☁️ Автосохранено · '+new Date().toLocaleTimeString('ru-RU'));
+    } catch(e){
+      showSyncIndicator('err');
+      syncLog('❌ Автосохранение не удалось: '+e.message);
+    }
+  }, 1500);
+}
+function getSyncSettings(){
+  return {
+    token: localStorage.getItem('gist_token')||'',
+    gistId: localStorage.getItem('gist_id')||''
+  };
+}
+
+function loadSyncSettingsToForm(){
+  const s=getSyncSettings();
+  document.getElementById('s-token').value=s.token;
+  document.getElementById('s-gist-id').value=s.gistId;
+  updateSyncStatus();
+}
+
+function saveSettings(){
+  const token=document.getElementById('s-token').value.trim();
+  const gistId=document.getElementById('s-gist-id').value.trim();
+  localStorage.setItem('gist_token',token);
+  localStorage.setItem('gist_id',gistId);
+  syncLog('✅ Настройки сохранены');
+  updateSyncStatus();
+}
+
+function clearSettings(){
+  if(!confirm('Сбросить токен и Gist ID?')) return;
+  localStorage.removeItem('gist_token');
+  localStorage.removeItem('gist_id');
+  document.getElementById('s-token').value='';
+  document.getElementById('s-gist-id').value='';
+  syncLog('🗑 Настройки сброшены');
+  updateSyncStatus();
+}
+
+function syncSettingsChanged(){
+  // ничего не делаем до нажатия «Сохранить настройки»
+}
+
+function updateSyncStatus(){
+  const s=getSyncSettings();
+  const bar=document.getElementById('sync-status-bar');
+  const txt=document.getElementById('sync-status-text');
+  if(!s.token){
+    bar.className='sync-status idle';txt.textContent='Токен не введён';
+  } else if(!s.gistId){
+    bar.className='sync-status idle';txt.textContent='Токен есть · Gist ID не задан (создастся автоматически)';
+  } else {
+    bar.className='sync-status ok';txt.textContent='Настроено · Gist: '+s.gistId.slice(0,8)+'...';
+  }
+}
+
+function syncLog(msg){
+  const el=document.getElementById('sync-log');
+  const time=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  el.innerHTML=`<div>${time} — ${msg}</div>`+el.innerHTML;
+}
+
+function setSyncLoading(text){
+  const bar=document.getElementById('sync-status-bar');
+  bar.className='sync-status loading';
+  document.getElementById('sync-status-text').textContent=text;
+}
+
+async function syncSave(){
+  const token=document.getElementById('s-token').value.trim()||getSyncSettings().token;
+  if(!token){alert('Введите GitHub токен');return;}
+  setSyncLoading('Сохранение в облако...');
+  syncLog('⏳ Сохраняю данные...');
+  try {
+    const content=JSON.stringify(orders,null,2);
+    const gistId=document.getElementById('s-gist-id').value.trim()||getSyncSettings().gistId;
+    let url='https://api.github.com/gists';
+    let method='POST';
+    let body={description:'Мебель — заказы',public:false,files:{'orders.json':{content}}};
+    if(gistId){
+      url=`https://api.github.com/gists/${gistId}`;
+      method='PATCH';
+    }
+    const resp=await fetch(url,{
+      method,
+      headers:{'Authorization':'token '+token,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
+      body:JSON.stringify(body)
+    });
+    if(!resp.ok){const e=await resp.json();throw new Error(e.message||resp.status);}
+    const data=await resp.json();
+    // Сохраняем gist id если только что создали
+    if(!gistId){
+      localStorage.setItem('gist_id',data.id);
+      localStorage.setItem('gist_token',token);
+      document.getElementById('s-gist-id').value=data.id;
+      syncLog('🆕 Gist создан: '+data.id);
+    }
+    localStorage.setItem('gist_token',token);
+    const updatedAt=new Date(data.updated_at).toLocaleString('ru-RU');
+    syncLog('☁️ Сохранено успешно · '+updatedAt);
+    const bar=document.getElementById('sync-status-bar');
+    bar.className='sync-status ok';
+    document.getElementById('sync-status-text').textContent='Сохранено · '+updatedAt;
+  } catch(e){
+    syncLog('❌ Ошибка: '+e.message);
+    const bar=document.getElementById('sync-status-bar');
+    bar.className='sync-status err';
+    document.getElementById('sync-status-text').textContent='Ошибка: '+e.message;
+  }
+}
+
+async function syncLoad(){
+  const token=document.getElementById('s-token').value.trim()||getSyncSettings().token;
+  const gistId=document.getElementById('s-gist-id').value.trim()||getSyncSettings().gistId;
+  if(!token){alert('Введите GitHub токен');return;}
+  if(!gistId){alert('Введите Gist ID (сначала сохраните данные с другого устройства)');return;}
+  if(!confirm('Загрузить данные из облака? Текущие данные на этом устройстве будут заменены.')) return;
+  setSyncLoading('Загрузка из облака...');
+  syncLog('⏳ Загружаю данные...');
+  try {
+    const resp=await fetch(`https://api.github.com/gists/${gistId}`,{
+      headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}
+    });
+    if(!resp.ok){const e=await resp.json();throw new Error(e.message||resp.status);}
+    const data=await resp.json();
+    const file=data.files['orders.json'];
+    if(!file) throw new Error('Файл orders.json не найден в Gist');
+    const loaded=JSON.parse(file.content);
+    orders=loaded;
+    save();
+    const updatedAt=new Date(data.updated_at).toLocaleString('ru-RU');
+    syncLog('✅ Загружено '+orders.length+' заказов · '+updatedAt);
+    const bar=document.getElementById('sync-status-bar');
+    bar.className='sync-status ok';
+    document.getElementById('sync-status-text').textContent='Загружено · '+updatedAt;
+    renderOrders();
+  } catch(e){
+    syncLog('❌ Ошибка: '+e.message);
+    const bar=document.getElementById('sync-status-bar');
+    bar.className='sync-status err';
+    document.getElementById('sync-status-text').textContent='Ошибка: '+e.message;
+  }
+}
+
+renderOrders();
+</script>
+</body>
+</html>
