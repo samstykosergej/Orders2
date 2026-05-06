@@ -228,12 +228,82 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
   </div>
 </div>
 
-<script>
+<script> 
+const GIST_ID = ' b289c449afabaf4ce77ce91873aca1e7';
+const TOKEN = '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'; 
+
+const GIST_API_URL = `https://api.github.com/gists/${GIST_ID}`;
+
+async function loadFromGist() {
+    try {
+        const response = await fetch(GIST_API_URL, {
+            headers: { 'Authorization': `token ${TOKEN}` }
+        });
+        const gist = await response.json();
+        const content = gist.files['orders.json']?.content;
+        if (content) {
+            const remoteOrders = JSON.parse(content);
+            if (Array.isArray(remoteOrders) && remoteOrders.length > 0) {
+                return remoteOrders;
+            }
+        }
+        return null;
+    } catch (e) {
+        console.warn('Ошибка загрузки из Gist:', e);
+        return null;
+    }
+}
+
+async function saveToGist(data) {
+    try {
+        const content = JSON.stringify(data, null, 2);
+        const response = await fetch(GIST_API_URL, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `token ${TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                files: { 'orders.json': { content: content } }
+            })
+        });
+        return response.ok;
+    } catch (e) {
+        console.warn('Ошибка сохранения в Gist:', e);
+        return false;
+    }
+}
+
 let orders = JSON.parse(localStorage.getItem('furniture_orders2') || '[]');
 let editingId = null;
 let tempItems=[], tempMats=[], tempPays=[], tempClientPays=[];
 
-function save(){localStorage.setItem('furniture_orders2',JSON.stringify(orders));}
+async function saveToGist(data) {
+    try {
+        const content = JSON.stringify(data, null, 2);
+        const response = await fetch(GIST_API_URL, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `token ${TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                files: { 'orders.json': { content: content } }
+            })
+        });
+        return response.ok;
+    } catch (e) {
+        console.warn('Ошибка сохранения в Gist:', e);
+        return false;
+    }
+}  
+let orders = JSON.parse(localStorage.getItem('furniture_orders2') || '[]');
+let editingId = null;
+let tempItems=[], tempMats=[], tempPays=[], tempClientPays=[];
+
+function save(){function save(){
+    localStorage.setItem('furniture_orders2', JSON.stringify(orders));
+    saveToGist(orders);}
 function fmt(n){return Number(n||0).toLocaleString('ru-RU');}
 function fmtD(d){if(!d)return '';const[y,m,day]=d.split('-');return day+'.'+m+'.'+y;}
 function statusLabel(s){
@@ -552,7 +622,30 @@ function removeClientPay(i){tempClientPays.splice(i,1);renderTempLists();}
 function removeMat(i){tempMats.splice(i,1);renderTempLists();}
 function removePay(i){tempPays.splice(i,1);renderTempLists();}
 
-renderOrders();
+(async function init() {
+    const remoteOrders = await loadFromGist();
+    if (remoteOrders && remoteOrders.length > 0) {
+        orders = remoteOrders;
+        localStorage.setItem('furniture_orders2', JSON.stringify(orders));
+    } else {
+        const local = localStorage.getItem('furniture_orders2');
+        if (local) {
+            orders = JSON.parse(local);
+        }
+    }
+(async function init() {
+    const remoteOrders = await loadFromGist();
+    if (remoteOrders && remoteOrders.length > 0) {
+        orders = remoteOrders;
+        localStorage.setItem('furniture_orders2', JSON.stringify(orders));
+    } else {
+        const local = localStorage.getItem('furniture_orders2');
+        if (local) {
+            orders = JSON.parse(local);
+        }
+    }
+    renderOrders();
+})();               
 </script>
 </body>
 </html>
