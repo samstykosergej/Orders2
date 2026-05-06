@@ -1,6 +1,4 @@
 
-
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -232,7 +230,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 </div>
 
 <script>
-const GIST_ID = 'b289c449afabaf4ce77ce91873aca1e7';
+const GIST_ID = 'e14b6a855452b5e8ba6db27032512ed';
 const TOKEN = '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';
 
 const GIST_API_URL = `https://api.github.com/gists/${GIST_ID}`;
@@ -243,7 +241,7 @@ async function loadFromGist() {
             headers: { 'Authorization': `token ${TOKEN}` }
         });
         const gist = await response.json();
-        const content = gist.files['orders2.json']?.content;
+        const content = gist.files['orders.json']?.content;
         if (content) {
             const remoteOrders = JSON.parse(content);
             if (Array.isArray(remoteOrders) && remoteOrders.length > 0) {
