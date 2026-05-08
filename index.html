@@ -10,149 +10,134 @@
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0d0f12;
-  --surface: #161a1f;
-  --surface2: #1e232a;
-  --border: rgba(255,255,255,0.08);
-  --accent: #3b82f6;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-  --green: #10b981;
-  --amber: #f59e0b;
-  --red: #ef4444;
+  --bg: #0d0f12; --surface: #161a1f; --surface2: #1e232a; --surface3: #252c35;
+  --border: rgba(255,255,255,0.08); --accent: #3b82f6; --text: #e2e8f0;
+  --muted: #94a3b8; --green: #10b981; --amber: #f59e0b; --red: #ef4444;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-body { 
-  background: var(--bg); color: var(--text); 
-  font-family: 'Golos Text', sans-serif; 
-  padding-bottom: 100px; /* Отступ под нижнее меню */
-}
+body { background: var(--bg); color: var(--text); font-family: 'Golos Text', sans-serif; padding-bottom: 90px; }
+h1, h2, h3, .unbounded { font-family: 'Unbounded', sans-serif; }
 
-/* Header */
-.header {
-  padding: 24px 16px 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  z-index: 100;
-}
-.header-title { font-family: 'Unbounded'; font-size: 20px; font-weight: 700; }
+.header { padding: 24px 16px 12px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--bg); z-index: 100; }
+.header-title { font-family: 'Unbounded'; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
 
-/* Sync Status Bar */
-.sync-status {
-  margin: 0 16px 16px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-}
-.sync-status.ok { border-color: var(--green); color: var(--green); }
-.sync-status.err { border-color: var(--red); color: var(--red); }
+.sync-status { margin: 0 16px 16px; padding: 10px 12px; border-radius: 12px; font-size: 11px; display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); }
 .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.sync-status.ok { color: var(--green); } .sync-status.err { color: var(--red); } .sync-status.wait { color: var(--amber); }
 
-/* Search Area */
 .search-container { padding: 0 16px 16px; }
-.search-input {
-  width: 100%; background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 12px; padding: 12px 16px; color: #fff; font-size: 15px; outline: none;
-}
-.search-input:focus { border-color: var(--accent); }
+.search-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; color: #fff; font-size: 15px; outline: none; transition: 0.2s; }
+.search-input:focus { border-color: var(--accent); background: var(--surface3); }
 
 /* Bottom Nav */
-.nav {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  background: rgba(22, 26, 31, 0.98); backdrop-filter: blur(15px);
-  display: flex; justify-content: space-around; padding: 12px 10px 28px;
-  border-top: 1px solid var(--border); z-index: 1000;
-}
-.nav-item {
-  color: var(--muted); text-decoration: none; font-size: 11px;
-  display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 500;
-}
+.nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(22, 26, 31, 0.98); backdrop-filter: blur(15px); display: flex; justify-content: space-around; padding: 10px 10px 30px; border-top: 1px solid var(--border); z-index: 1000; }
+.nav-item { color: var(--muted); text-decoration: none; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 500; transition: 0.2s; }
 .nav-item.active { color: var(--accent); }
-.nav-icon { font-size: 20px; margin-bottom: 2px; }
+.nav-icon { font-size: 20px; }
 
-/* Order Card */
-.order-card {
-  background: var(--surface); margin: 0 16px 12px; padding: 16px;
-  border-radius: 16px; border: 1px solid var(--border);
-  position: relative; overflow: hidden;
-}
-.order-card::before {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: transparent;
-}
-.s-work::before { background: var(--amber); }
-.s-done::before { background: var(--green); }
+/* Cards */
+.order-card { background: var(--surface); margin: 0 16px 12px; padding: 16px; border-radius: 18px; border: 1px solid var(--border); position: relative; overflow: hidden; }
+.order-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: transparent; }
+.s-work::before { background: var(--amber); } .s-done::before { background: var(--green); }
 
-.card-top { display: flex; justify-content: space-between; margin-bottom: 6px; }
-.client-name { font-weight: 600; font-size: 17px; }
-.card-items { color: var(--muted); font-size: 13px; margin-bottom: 12px; line-height: 1.4; }
+.card-top { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.client-name { font-weight: 600; font-size: 17px; letter-spacing: -0.01em; }
+.card-items { color: var(--muted); font-size: 13px; margin-bottom: 14px; line-height: 1.4; }
 
-.card-data {
-  display: flex; justify-content: space-between; align-items: center;
-  background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 10px;
-}
-.price-val { font-weight: 700; color: var(--text); }
-.profit-val { font-weight: 600; font-size: 13px; color: var(--green); }
+.card-metrics { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 10px 12px; border-radius: 12px; }
+.price-tag { font-weight: 700; font-size: 15px; }
+.profit-tag { font-weight: 700; font-size: 14px; color: var(--green); }
 
-.badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.pill { font-size: 10px; padding: 3px 7px; border-radius: 5px; font-weight: 700; text-transform: uppercase; }
-.p-red { background: rgba(239, 68, 68, 0.1); color: var(--red); }
-.p-amber { background: rgba(245, 158, 11, 0.1); color: var(--amber); }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.pill { font-size: 10px; padding: 4px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; }
+.p-red { background: rgba(239, 68, 68, 0.12); color: var(--red); }
+.p-amber { background: rgba(245, 158, 11, 0.12); color: var(--amber); }
 
-/* Global components */
-.page { display: none; }
-.page.active { display: block; }
-.badge { font-size: 10px; padding: 3px 8px; border-radius: 6px; font-weight: 800; text-transform: uppercase; }
-.b-new { background: var(--accent); }
+/* Badges */
+.badge { font-size: 10px; padding: 3px 8px; border-radius: 6px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; }
+.b-new { background: var(--accent); color: #fff; }
 .b-work { background: var(--amber); color: #000; }
 .b-done { background: var(--green); color: #000; }
-.btn-fab { 
-    position: fixed; bottom: 100px; right: 20px; 
-    width: 56px; height: 56px; border-radius: 28px; 
-    background: var(--accent); color: #fff; border: none;
-    font-size: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-}
+
+/* Forms & UI Elements */
+.page { display: none; padding-top: 10px; animation: fadeIn 0.3s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+.form-group { padding: 0 16px 20px; }
+.label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
+input, select, textarea { width: 100%; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; color: #fff; font-size: 16px; margin-bottom: 16px; outline: none; font-family: inherit; }
+input:focus { border-color: var(--accent); }
+.btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-weight: 700; font-family: 'Unbounded'; font-size: 14px; transition: 0.2s; }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--red); }
+
+/* Detail View Styles */
+.detail-section { background: var(--surface); border-radius: 20px; padding: 20px; margin: 0 16px 16px; border: 1px solid var(--border); }
+.item-row { display: grid; grid-template-columns: 1fr 80px 40px; gap: 8px; margin-bottom: 8px; align-items: center; }
+.payment-row { display: grid; grid-template-columns: 1fr 40px; gap: 8px; margin-bottom: 8px; }
+
+/* Stats Styles */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px 20px; }
+.stat-card { background: var(--surface); padding: 16px; border-radius: 16px; border: 1px solid var(--border); }
+.stat-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; font-weight: 600; }
+.stat-val { font-size: 18px; font-weight: 700; font-family: 'Unbounded'; }
 </style>
 </head>
 <body>
 
 <div class="header">
   <div class="header-title">FURBI DESIGN</div>
-  <div id="orders-count" style="font-size: 12px; color: var(--muted);"></div>
+  <div id="orders-count" style="font-size: 12px; color: var(--muted); font-weight: 600;"></div>
 </div>
 
-<div id="sync-status-bar" class="sync-status">
+<div id="sync-status-bar" class="sync-status wait">
   <div class="sync-dot"></div>
-  <span id="sync-status-text">Загрузка...</span>
+  <span id="sync-status-text">Инициализация...</span>
 </div>
 
 <div id="page-orders" class="page active">
   <div class="search-container">
-    <input type="text" id="order-search" class="search-input" placeholder="Поиск по имени или изделию..." oninput="renderOrders()">
+    <input type="text" id="order-search" class="search-input" placeholder="Поиск клиента или изделия..." oninput="renderOrders()">
   </div>
   <div id="orders-list"></div>
 </div>
 
-<div id="page-settings" class="page" style="padding: 20px;">
-  <h2 class="unbounded" style="margin-bottom: 20px;">Настройки Gist</h2>
-  <input type="password" id="gist-token" placeholder="GitHub Token" style="width:100%; padding:12px; background:var(--surface); border:1px solid var(--border); color:#fff; border-radius:8px; margin-bottom:10px;">
-  <input type="text" id="gist-id" placeholder="Gist ID" style="width:100%; padding:12px; background:var(--surface); border:1px solid var(--border); color:#fff; border-radius:8px; margin-bottom:20px;">
-  <button onclick="saveGistCreds()" style="width:100%; padding:14px; background:var(--accent); color:#fff; border:none; border-radius:12px; font-weight:700;">Сохранить и синхронизировать</button>
-  <button onclick="syncUp()" style="width:100%; padding:14px; background:var(--surface2); color:#fff; border:none; border-radius:12px; font-weight:700; margin-top:10px;">Выгрузить в облако ↑</button>
+<div id="page-add" class="page">
+  <div class="form-group">
+    <label class="label">Клиент</label>
+    <input type="text" id="f-client" placeholder="Имя клиента или название">
+    <label class="label">Дата завершения (план)</label>
+    <input type="date" id="f-dateEnd">
+    <button class="btn btn-primary" onclick="addOrder()">Создать заказ</button>
+  </div>
+</div>
+
+<div id="page-stats" class="page">
+  <div class="stats-grid" id="stats-container"></div>
+</div>
+
+<div id="page-settings" class="page">
+  <div class="form-group">
+    <label class="label">GitHub Token</label>
+    <input type="password" id="gist-token" placeholder="ghp_xxxxxxxx">
+    <label class="label">Gist ID</label>
+    <input type="text" id="gist-id" placeholder="ID вашего секретного Gist">
+    <button class="btn btn-primary" onclick="saveGistCreds()">Сохранить настройки</button>
+    <button class="btn btn-outline" style="margin-top: 12px;" onclick="syncUp()">Принудительная выгрузка ↑</button>
+  </div>
+</div>
+
+<div id="page-detail" class="page">
+  <div id="detail-content"></div>
 </div>
 
 <nav class="nav">
   <a href="#" class="nav-item active" onclick="showPage('orders', this)">
-    <span class="nav-icon">📋</span><span>Заказы</span>
+    <span class="nav-icon">📋</span><span>Список</span>
   </a>
   <a href="#" class="nav-item" onclick="showPage('add', this)">
     <span class="nav-icon">➕</span><span>Создать</span>
@@ -166,19 +151,24 @@ body {
 </nav>
 
 <script>
-// --- КОНСТАНТЫ И ДАННЫЕ ---
+// --- CORE DATA & STORAGE ---
 const KEY = 'furbis_orders';
 const GIST_TOKEN_KEY = 'furbis_gist_token';
 const GIST_ID_KEY = 'furbis_gist_id';
 
 let orders = JSON.parse(localStorage.getItem(KEY) || '[]');
+let currentOrderId = null;
 
-function save() { localStorage.setItem(KEY, JSON.stringify(orders)); }
+function save() { 
+  localStorage.setItem(KEY, JSON.stringify(orders)); 
+  renderOrders();
+  renderStats();
+}
 
-// --- ТВОЯ ЛОГИКА РАСЧЕТОВ ---
 function fmt(n) { return Math.round(n || 0).toLocaleString('ru-RU'); }
 
-function getOrderTotals(o) {
+// --- CALCULATIONS (Твоя логика 60/40 и налоги) ---
+function getOrderMetrics(o) {
   const total = (o.items || []).reduce((s, i) => s + Number(i.price || 0), 0);
   const materials = (o.items || []).reduce((s, i) => s + Number(i.material || 0), 0);
   const masterBase = Number(o.masterTotal || 0);
@@ -188,50 +178,252 @@ function getOrderTotals(o) {
   const clientPaid = (o.clientPayments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
   const masterPaid = (o.payments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
   
-  return { total, profit, clientDebt: total - clientPaid, masterDebt: masterBase - masterPaid };
+  return { 
+    total, materials, tax, profit, 
+    clientPaid, masterPaid,
+    clientDebt: total - clientPaid, 
+    masterDebt: masterBase - masterPaid 
+  };
 }
 
-// --- ОТРИСОВКА ---
+// --- RENDER LIST ---
 function renderOrders() {
-  const list = document.getElementById('orders-list');
-  const search = document.getElementById('order-search').value.toLowerCase();
+  const container = document.getElementById('orders-list');
+  const query = document.getElementById('order-search').value.toLowerCase();
   
   const filtered = orders.filter(o => 
-    o.client.toLowerCase().includes(search) || 
-    (o.items && o.items.some(i => i.name.toLowerCase().includes(search)))
+    o.client.toLowerCase().includes(query) || 
+    (o.items && o.items.some(i => i.name.toLowerCase().includes(query)))
   );
 
-  document.getElementById('orders-count').textContent = `Всего: ${filtered.length}`;
+  document.getElementById('orders-count').textContent = `Заказов: ${filtered.length}`;
 
-  list.innerHTML = filtered.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0)).map(o => {
-    const { total, profit, clientDebt, masterDebt } = getOrderTotals(o);
+  if (filtered.length === 0) {
+    container.innerHTML = '<div style="text-align:center; padding:50px; color:var(--muted);">Ничего не найдено</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0)).map(o => {
+    const m = getOrderMetrics(o);
     const statusClass = o.status === 'work' ? 's-work' : (o.status === 'done' ? 's-done' : '');
+    const itemsText = (o.items || []).map(i => i.name).join(', ') || 'Состав не указан';
 
     return `
-      <div class="order-card ${statusClass}" onclick="alert('Детали заказа доступны в консоли (в разработке)')">
+      <div class="order-card ${statusClass}" onclick="openDetail('${o.id}')">
         <div class="card-top">
           <span class="client-name">${o.client}</span>
           <span class="badge b-${o.status}">${o.status === 'work' ? 'В работе' : (o.status === 'done' ? 'Готов' : 'Новый')}</span>
         </div>
-        <div class="card-items">${(o.items || []).map(i => i.name).join(', ') || 'Состав не указан'}</div>
-        <div class="card-data">
-          <span class="price-val">${fmt(total)} ₽</span>
-          <span class="profit-val">+${fmt(profit)} ₽</span>
+        <div class="card-items">${itemsText}</div>
+        <div class="card-metrics">
+          <span class="price-tag">${fmt(m.total)} ₽</span>
+          <span class="profit-tag">+${fmt(m.profit)} ₽</span>
         </div>
-        <div class="badges">
-          ${clientDebt > 0 ? `<span class="pill p-red">Клиент должен: ${fmt(clientDebt)}</span>` : ''}
-          ${masterDebt > 0 ? `<span class="pill p-amber">Мастеру: ${fmt(masterDebt)}</span>` : ''}
+        <div class="pills">
+          ${m.clientDebt > 0 ? `<span class="pill p-red">Клиент должен: ${fmt(m.clientDebt)}</span>` : ''}
+          ${m.masterDebt > 0 ? `<span class="pill p-amber">Мастеру: ${fmt(m.masterDebt)}</span>` : ''}
         </div>
       </div>
     `;
   }).join('');
 }
 
-// --- ТВОИ ФУНКЦИИ СИНХРОНИЗАЦИИ ---
+// --- RENDER DETAIL (EDIT) ---
+function openDetail(id) {
+  currentOrderId = id;
+  const o = orders.find(x => x.id === id);
+  showPage('detail');
+  renderDetail();
+}
+
+function renderDetail() {
+  const o = orders.find(x => x.id === currentOrderId);
+  const m = getOrderMetrics(o);
+  const container = document.getElementById('detail-content');
+
+  container.innerHTML = `
+    <div class="form-group">
+      <label class="label">Клиент</label>
+      <input type="text" value="${o.client}" onchange="updateOrder('client', this.value)">
+      
+      <label class="label">Статус</label>
+      <select onchange="updateOrder('status', this.value)">
+        <option value="new" ${o.status==='new'?'selected':''}>Новый</option>
+        <option value="work" ${o.status==='work'?'selected':''}>В работе</option>
+        <option value="done" ${o.status==='done'?'selected':''}>Готов</option>
+      </select>
+    </div>
+
+    <div class="detail-section">
+      <h3 style="margin-bottom:15px; font-size:14px;">ПОЗИЦИИ ЗАКАЗА</h3>
+      ${(o.items || []).map((item, idx) => `
+        <div class="item-row">
+          <input type="text" value="${item.name}" onchange="updateItem(${idx}, 'name', this.value)" style="margin-bottom:0">
+          <input type="number" value="${item.price}" onchange="updateItem(${idx}, 'price', this.value)" style="margin-bottom:0">
+          <button class="btn btn-danger" onclick="removeItem(${idx})" style="padding:10px; margin:0">×</button>
+        </div>
+      `).join('')}
+      <button class="btn btn-outline" style="margin-top:10px; padding:10px" onclick="addItem()">+ Добавить товар</button>
+    </div>
+
+    <div class="detail-section">
+      <h3 style="margin-bottom:15px; font-size:14px;">РАСЧЕТ МАСТЕРА</h3>
+      <label class="label">Итого мастеру (база)</label>
+      <input type="number" value="${o.masterTotal || 0}" onchange="updateOrder('masterTotal', this.value)">
+      
+      <h3 style="margin-top:20px; margin-bottom:10px; font-size:12px; color:var(--muted)">ВЫПЛАТЫ МАСТЕРУ</h3>
+      ${(o.payments || []).map((p, idx) => `
+        <div class="payment-row">
+          <span>${fmt(p.amount)} ₽ (${new Date(p.date).toLocaleDateString()})</span>
+          <button class="btn btn-danger" onclick="removePayment(${idx}, 'payments')" style="padding:4px; margin:0">×</button>
+        </div>
+      `).join('')}
+      <button class="btn btn-outline" onclick="addPayment('payments')">+ Выплата мастеру</button>
+    </div>
+
+    <div class="detail-section">
+      <h3 style="margin-bottom:15px; font-size:14px;">ПЛАТЕЖИ КЛИЕНТА</h3>
+      ${(o.clientPayments || []).map((p, idx) => `
+        <div class="payment-row">
+          <span>${fmt(p.amount)} ₽ (${new Date(p.date).toLocaleDateString()})</span>
+          <button class="btn btn-danger" onclick="removePayment(${idx}, 'clientPayments')" style="padding:4px; margin:0">×</button>
+        </div>
+      `).join('')}
+      <button class="btn btn-outline" onclick="addPayment('clientPayments')">+ Платеж от клиента</button>
+    </div>
+
+    <div style="padding: 0 16px 40px;">
+      <button class="btn btn-danger" onclick="deleteOrder()">Удалить заказ полностью</button>
+      <button class="btn btn-outline" style="margin-top:10px;" onclick="showPage('orders')">← Назад к списку</button>
+    </div>
+  `;
+}
+
+// --- ORDER ACTIONS ---
+function updateOrder(key, val) {
+  const o = orders.find(x => x.id === currentOrderId);
+  o[key] = val;
+  save();
+  renderDetail();
+}
+
+function updateItem(idx, key, val) {
+  const o = orders.find(x => x.id === currentOrderId);
+  o.items[idx][key] = (key==='price'||key==='material') ? Number(val) : val;
+  save();
+  renderDetail();
+}
+
+function addItem() {
+  const o = orders.find(x => x.id === currentOrderId);
+  if(!o.items) o.items = [];
+  o.items.push({ name: 'Новое изделие', price: 0, material: 0 });
+  save();
+  renderDetail();
+}
+
+function removeItem(idx) {
+  const o = orders.find(x => x.id === currentOrderId);
+  o.items.splice(idx, 1);
+  save();
+  renderDetail();
+}
+
+function addPayment(type) {
+  const amount = prompt('Введите сумму:');
+  if(!amount) return;
+  const o = orders.find(x => x.id === currentOrderId);
+  if(!o[type]) o[type] = [];
+  o[type].push({ amount: Number(amount), date: new Date().toISOString() });
+  save();
+  renderDetail();
+}
+
+function removePayment(idx, type) {
+  const o = orders.find(x => x.id === currentOrderId);
+  o[type].splice(idx, 1);
+  save();
+  renderDetail();
+}
+
+function deleteOrder() {
+  if(!confirm('Точно удалить?')) return;
+  orders = orders.filter(x => x.id !== currentOrderId);
+  save();
+  showPage('orders');
+}
+
+function addOrder() {
+  const client = document.getElementById('f-client').value;
+  const dateEnd = document.getElementById('f-dateEnd').value;
+  if(!client) return alert('Укажите имя клиента');
+  
+  const newOrder = {
+    id: Date.now().toString(),
+    client,
+    date: new Date().toISOString(),
+    dateEnd,
+    status: 'new',
+    items: [],
+    payments: [],
+    clientPayments: [],
+    masterTotal: 0
+  };
+  
+  orders.push(newOrder);
+  save();
+  document.getElementById('f-client').value = '';
+  showPage('orders', document.querySelector('.nav-item'));
+}
+
+// --- STATS ---
+function renderStats() {
+  const container = document.getElementById('stats-container');
+  let totalRevenue = 0, totalProfit = 0, totalTax = 0, clientDebt = 0;
+  
+  orders.forEach(o => {
+    const m = getOrderMetrics(o);
+    totalRevenue += m.total;
+    totalProfit += m.profit;
+    totalTax += m.tax;
+    clientDebt += m.clientDebt;
+  });
+
+  container.innerHTML = `
+    <div class="stat-card" style="grid-column: span 2;">
+      <div class="stat-label">Общая выручка</div>
+      <div class="stat-val" style="color:var(--accent)">${fmt(totalRevenue)} ₽</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Чистая прибыль</div>
+      <div class="stat-val" style="color:var(--green)">${fmt(totalProfit)} ₽</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Налоги (6%)</div>
+      <div class="stat-val" style="color:var(--amber)">${fmt(totalTax)} ₽</div>
+    </div>
+    <div class="stat-card" style="grid-column: span 2;">
+      <div class="stat-label">Дебиторка (долги клиентов)</div>
+      <div class="stat-val" style="color:var(--red)">${fmt(clientDebt)} ₽</div>
+    </div>
+  `;
+}
+
+// --- NAVIGATION ---
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  if(id === 'orders') renderOrders();
+  if(id === 'stats') renderStats();
+}
+
+// --- SYNC LOGIC (GitHub Gist) ---
 async function syncUp() {
   const token = localStorage.getItem(GIST_TOKEN_KEY);
   const id = localStorage.getItem(GIST_ID_KEY);
-  if(!token || !id) return;
+  if(!token || !id) return updateSyncUI('Нет настроек Gist', 'err');
 
   updateSyncUI('Выгрузка...', 'wait');
   try {
@@ -241,26 +433,25 @@ async function syncUp() {
       body: JSON.stringify({ files: { 'orders.json': { content: JSON.stringify(orders) } } })
     });
     if(res.ok) updateSyncUI('Облако обновлено', 'ok');
-    else throw new Error('Ошибка выгрузки');
-  } catch(e) { updateSyncUI(e.message, 'err'); }
+    else throw new Error('Ошибка API');
+  } catch(e) { updateSyncUI('Ошибка выгрузки', 'err'); }
 }
 
 async function syncDown() {
   const token = localStorage.getItem(GIST_TOKEN_KEY);
   const id = localStorage.getItem(GIST_ID_KEY);
-  if(!token || !id) return;
+  if(!token || !id) return updateSyncUI('Настройте облако', 'wait');
 
+  updateSyncUI('Синхронизация...', 'wait');
   try {
     const res = await fetch(`https://api.github.com/gists/${id}`, {
       headers: { 'Authorization': `token ${token}` }
     });
     const data = await res.json();
-    const file = data.files['orders.json'];
-    if(file) {
-      orders = JSON.parse(file.content);
+    if(data.files && data.files['orders.json']) {
+      orders = JSON.parse(data.files['orders.json'].content);
       save();
-      renderOrders();
-      updateSyncUI('Данные загружены', 'ok');
+      updateSyncUI('Синхронизировано', 'ok');
     }
   } catch(e) { updateSyncUI('Ошибка загрузки', 'err'); }
 }
@@ -278,19 +469,12 @@ function saveGistCreds() {
   syncDown();
 }
 
-function showPage(id, el) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + id).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  el.classList.add('active');
-  if(id === 'orders') renderOrders();
-}
-
-// Инициализация
+// Init
 document.getElementById('gist-token').value = localStorage.getItem(GIST_TOKEN_KEY) || '';
 document.getElementById('gist-id').value = localStorage.getItem(GIST_ID_KEY) || '';
 syncDown();
 renderOrders();
 </script>
+
 </body>
 </html>
