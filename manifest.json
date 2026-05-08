@@ -1,0 +1,16 @@
+
+{
+  "name":"Furbis Design",
+  "short_name":"Furbis",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#0d1117",
+  "theme_color":"#0d1117",
+  "icons":[
+    {
+      "src":"logo.png",
+      "sizes":"512x512",
+      "type":"image/png"
+    }
+  ]
+}
