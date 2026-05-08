@@ -79,8 +79,11 @@ input, select, textarea { width: 100%; padding: 14px; background: var(--surface)
 .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
 .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--red); }
 
+/* Detail View Styles */
 .detail-section { background: var(--surface); border-radius: 20px; padding: 20px; margin: 0 16px 16px; border: 1px solid var(--border); }
-.item-row { display: grid; grid-template-columns: 1fr 80px 40px; gap: 8px; margin-bottom: 8px; align-items: center; }
+/* Исправленная сетка для трех полей + кнопка */
+.item-row { display: grid; grid-template-columns: 1fr 70px 70px 30px; gap: 6px; margin-bottom: 8px; align-items: center; }
+.item-row input { padding: 8px; font-size: 13px; margin-bottom: 0; border-radius: 8px; }
 .payment-row { display: grid; grid-template-columns: 1fr 40px; gap: 8px; margin-bottom: 8px; }
 
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px 20px; }
@@ -177,7 +180,7 @@ function getOrderMetrics(o) {
   const profit = total - masterBase - materials - tax;
   const clientPaid = (o.clientPayments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
   const masterPaid = (o.payments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
-  return { total, profit, clientDebt: total - clientPaid, masterDebt: masterBase - masterPaid };
+  return { total, materials, profit, clientDebt: total - clientPaid, masterDebt: masterBase - masterPaid };
 }
 
 function renderOrders() {
@@ -194,7 +197,10 @@ function renderOrders() {
       <div class="order-card ${statusClass}" onclick="openDetail('${o.id}')">
         <div class="card-top"><span class="client-name">${o.client}</span><span class="badge b-${o.status}">${o.status==='work'?'В работе':(o.status==='done'?'Готов':'Новый')}</span></div>
         <div class="card-items">${(o.items || []).map(i => i.name).join(', ') || 'Состав не указан'}</div>
-        <div class="card-metrics"><span class="price-tag">${fmt(m.total)} ₽</span><span class="profit-tag">+${fmt(m.profit)} ₽</span></div>
+        <div class="card-metrics">
+          <div><span class="price-tag">${fmt(m.total)} ₽</span><div style="font-size:10px; color:var(--muted)">Закуп: ${fmt(m.materials)} ₽</div></div>
+          <span class="profit-tag">+${fmt(m.profit)} ₽</span>
+        </div>
         <div class="pills">${m.clientDebt > 0 ? `<span class="pill p-red">Долг: ${fmt(m.clientDebt)}</span>` : ''}${m.masterDebt > 0 ? `<span class="pill p-amber">Мастеру: ${fmt(m.masterDebt)}</span>` : ''}</div>
       </div>`;
   }).join('');
@@ -216,8 +222,14 @@ function renderDetail() {
       </select>
     </div>
     <div class="detail-section">
-      <h3 style="margin-bottom:15px; font-size:14px;">ПОЗИЦИИ</h3>
-      ${(o.items || []).map((item, idx) => `<div class="item-row"><input type="text" value="${item.name}" onchange="updateItem(${idx},'name',this.value)"><input type="number" value="${item.price}" onchange="updateItem(${idx},'price',this.value)"><button class="btn btn-danger" onclick="removeItem(${idx})" style="padding:10px; margin:0">×</button></div>`).join('')}
+      <h3 style="margin-bottom:10px; font-size:14px;">ПОЗИЦИИ (Название | Цена | Закуп)</h3>
+      ${(o.items || []).map((item, idx) => `
+        <div class="item-row">
+          <input type="text" value="${item.name}" placeholder="Название" onchange="updateItem(${idx},'name',this.value)">
+          <input type="number" value="${item.price}" placeholder="Цена" onchange="updateItem(${idx},'price',this.value)">
+          <input type="number" value="${item.material || 0}" placeholder="Закуп" onchange="updateItem(${idx},'material',this.value)">
+          <button class="btn btn-danger" onclick="removeItem(${idx})" style="padding:8px; margin:0; line-height:1">×</button>
+        </div>`).join('')}
       <button class="btn btn-outline" style="margin-top:10px;" onclick="addItem()">+ Добавить товар</button>
     </div>
     <div class="detail-section">
@@ -233,8 +245,8 @@ function renderDetail() {
 }
 
 function updateOrder(k, v) { orders.find(x => x.id === currentOrderId)[k] = v; save(); renderDetail(); }
-function updateItem(idx, k, v) { orders.find(x => x.id === currentOrderId).items[idx][k] = k==='price'?Number(v):v; save(); renderDetail(); }
-function addItem() { const o = orders.find(x => x.id === currentOrderId); if(!o.items) o.items = []; o.items.push({name:'Новый товар', price:0}); save(); renderDetail(); }
+function updateItem(idx, k, v) { orders.find(x => x.id === currentOrderId).items[idx][k] = (k==='price'||k==='material')?Number(v):v; save(); renderDetail(); }
+function addItem() { const o = orders.find(x => x.id === currentOrderId); if(!o.items) o.items = []; o.items.push({name:'Новое изделие', price:0, material:0}); save(); renderDetail(); }
 function removeItem(idx) { orders.find(x => x.id === currentOrderId).items.splice(idx,1); save(); renderDetail(); }
 function addPayment(type) { const a = prompt('Сумма:'); if(!a) return; const o = orders.find(x => x.id === currentOrderId); if(!o[type]) o[type] = []; o[type].push({amount:Number(a), date:new Date().toISOString()}); save(); renderDetail(); }
 function deleteOrder() { if(!confirm('Удалить?')) return; orders = orders.filter(x => x.id !== currentOrderId); save(); showPage('orders'); }
@@ -247,9 +259,12 @@ function addOrder() {
 
 function renderStats() {
   const cont = document.getElementById('stats-container');
-  let rev = 0, prof = 0;
-  orders.forEach(o => { const m = getOrderMetrics(o); rev += m.total; prof += m.profit; });
-  cont.innerHTML = `<div class="stat-card" style="grid-column:span 2;"><div class="stat-label">Выручка</div><div class="stat-val" style="color:var(--accent)">${fmt(rev)} ₽</div></div><div class="stat-card" style="grid-column:span 2;"><div class="stat-label">Прибыль</div><div class="stat-val" style="color:var(--green)">${fmt(prof)} ₽</div></div>`;
+  let rev = 0, prof = 0, mats = 0;
+  orders.forEach(o => { const m = getOrderMetrics(o); rev += m.total; prof += m.profit; mats += m.materials; });
+  cont.innerHTML = `
+    <div class="stat-card" style="grid-column:span 2;"><div class="stat-label">Выручка</div><div class="stat-val" style="color:var(--accent)">${fmt(rev)} ₽</div></div>
+    <div class="stat-card"><div class="stat-label">Прибыль</div><div class="stat-val" style="color:var(--green)">${fmt(prof)} ₽</div></div>
+    <div class="stat-card"><div class="stat-label">Материалы</div><div class="stat-val" style="color:var(--amber)">${fmt(mats)} ₽</div></div>`;
 }
 
 function showPage(id, el) {
@@ -289,7 +304,7 @@ function saveGistCreds() { localStorage.setItem(GIST_TOKEN_KEY, document.getElem
 function updateOnlineStatus() {
   let b = document.getElementById('offline-banner');
   if (!navigator.onLine) {
-    if (!b) { b = document.createElement('div'); b.id = 'offline-banner'; b.className = 'offline-banner'; b.textContent = 'Optionally: 📵 Офлайн — данные сохраняются локально'; document.body.appendChild(b); }
+    if (!b) { b = document.createElement('div'); b.id = 'offline-banner'; b.className = 'offline-banner'; b.textContent = '📵 Офлайн — данные сохраняются локально'; document.body.appendChild(b); }
   } else { if (b) b.remove(); }
 }
 window.addEventListener('online', updateOnlineStatus); window.addEventListener('offline', updateOnlineStatus); updateOnlineStatus();
