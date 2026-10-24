@@ -93,6 +93,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 .sum-card{background:var(--surface2);border-radius:10px;padding:10px 12px;text-align:center;}
 .sum-card .sc-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;}
 .sum-card .sc-val{font-family:var(--font-d);font-size:16px;font-weight:700;}
+.sum-card.wide{grid-column:1 / -1;}
+.sum-card .sc-hint{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.4;}
 .sc-val.green{color:var(--green);}.sc-val.red{color:var(--red);}.sc-val.blue{color:var(--accent);}.sc-val.amber{color:var(--amber);}.sc-val.purple{color:var(--purple);}
 .prog-wrap{margin-top:8px;}
 .prog-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px;}
@@ -290,6 +292,14 @@ function calcTax(o){
 }
 function calcProfit(o){return orderPrice(o)-(o.materials||[]).reduce((s,m)=>s+Number(m.cost||0),0)-paidSum(o.payments);}
 function calcProfitAfterTax(o){return calcProfit(o)-calcTax(o);}
+// Остаток денег: что реально осталось на руках из полученных от клиента денег
+// = получено − налог 6% с полученного − материалы − выплаты мастеру
+function calcCash(o){
+  const received=paidSum(o.clientPayments);
+  const taxReceived=Math.round(received*0.06);
+  const mats=(o.materials||[]).reduce((s,m)=>s+Number(m.cost||0),0);
+  return received-taxReceived-mats-paidSum(o.payments);
+}
 
 function showPage(name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -309,6 +319,7 @@ function renderOrders(){
     const price=orderPrice(o);
     const profit=calcProfit(o);
     const profitNet=calcProfitAfterTax(o);
+    const cash=calcCash(o);
     const clientDebt=price-paidSum(o.clientPayments);
     const masterDebt=Number(o.masterTotal||0)-paidSum(o.payments);
     const items=(o.items||[]).map(i=>i.name).join(', ')||'Без позиций';
@@ -328,7 +339,7 @@ function renderOrders(){
       <div class="card-top"><div class="card-name">${o.client}</div>${statusLabel(o.status)}</div>
       <div class="card-items">${items}</div>
       <div class="card-bottom">
-        <div><span class="label">Заказ: </span>${fmt(price)} ₽ · ${fmtD(o.date)}</div>
+        <div><span class="label">Заказ: </span>${fmt(price)} ₽ · ${fmtD(o.date)}<div style="margin-top:4px;"><span class="label">Остаток денег: </span><span style="color:${cash>=0?'var(--green)':'var(--red)'};font-weight:500;">${fmt(cash)} ₽</span></div></div>
         <div style="text-align:right;">
           <div class="profit ${profitNet>=0?'pos':'neg'}">${profitNet>=0?'+':''}${fmt(profitNet)} ₽</div>
           <div style="font-size:10px;color:var(--muted);">после налога</div>
@@ -351,6 +362,8 @@ function openDetail(id){
   const profit=price-mats-paidM;
   const tax=Math.round(price*0.06);
   const profitNet=profit-tax;
+  const taxReceived=Math.round(paidC*0.06);
+  const cash=calcCash(o);
 
   let html=`
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
@@ -366,6 +379,7 @@ function openDetail(id){
         <div class="sum-card"><div class="sc-label">Налог УСН 6%</div><div class="sc-val red">−${fmt(tax)} ₽</div></div>
         <div class="sum-card"><div class="sc-label">Прибыль до налога</div><div class="sc-val ${profit>=0?'green':'red'}">${profit>=0?'+':''}${fmt(profit)} ₽</div></div>
         <div class="sum-card" style="border:1px solid rgba(62,207,142,0.3);background:rgba(62,207,142,0.06);"><div class="sc-label">Прибыль после налога</div><div class="sc-val ${profitNet>=0?'green':'red'}">${profitNet>=0?'+':''}${fmt(profitNet)} ₽</div></div>
+        <div class="sum-card wide" style="border:1px solid rgba(79,156,249,0.35);background:rgba(79,156,249,0.07);"><div class="sc-label">💰 Остаток денег</div><div class="sc-val ${cash>=0?'green':'red'}" style="font-size:20px;">${fmt(cash)} ₽</div><div class="sc-hint">Получено ${fmt(paidC)} − налог ${fmt(taxReceived)} − материалы ${fmt(mats)} − мастеру ${fmt(paidM)}</div></div>
       </div>
     </div>`;
 
@@ -427,6 +441,7 @@ function renderStats(){
   const totalTax=orders.reduce((s,o)=>s+calcTax(o),0);
   const totalProfit=total-totalMats-totalPays;
   const totalProfitNet=totalProfit-totalTax;
+  const totalCash=orders.reduce((s,o)=>s+calcCash(o),0);
   const clientDebtTotal=orders.reduce((s,o)=>s+Math.max(0,orderPrice(o)-paidSum(o.clientPayments)),0);
   const masterDebtTotal=orders.reduce((s,o)=>s+Math.max(0,Number(o.masterTotal||0)-paidSum(o.payments)),0);
   const done=orders.filter(o=>o.status==='done').length;
@@ -441,6 +456,7 @@ function renderStats(){
     <div class="stat-card"><div class="stat-label">Налог УСН 6%</div><div class="stat-val red">−${fmt(totalTax)} ₽</div></div>
     <div class="stat-card"><div class="stat-label">Прибыль до налога</div><div class="stat-val ${totalProfit>=0?'green':'red'}">${totalProfit>=0?'+':''}${fmt(totalProfit)} ₽</div></div>
     <div class="stat-card" style="border-color:rgba(62,207,142,0.3);background:rgba(62,207,142,0.04);"><div class="stat-label">Прибыль после налога</div><div class="stat-val ${totalProfitNet>=0?'green':'red'}">${totalProfitNet>=0?'+':''}${fmt(totalProfitNet)} ₽</div></div>
+    <div class="stat-card" style="border-color:rgba(79,156,249,0.35);background:rgba(79,156,249,0.06);"><div class="stat-label">💰 Остаток денег<div style="font-size:10px;margin-top:3px;">по всем заказам</div></div><div class="stat-val ${totalCash>=0?'green':'red'}">${fmt(totalCash)} ₽</div></div>
     <div class="stat-card"><div class="stat-label">Долг клиентов</div><div class="stat-val ${clientDebtTotal>0?'amber':'green'}">${clientDebtTotal>0?fmt(clientDebtTotal)+' ₽':'Нет долгов'}</div></div>
     <div class="stat-card"><div class="stat-label">Долг мастерам</div><div class="stat-val ${masterDebtTotal>0?'purple':'green'}">${masterDebtTotal>0?fmt(masterDebtTotal)+' ₽':'Нет долгов'}</div></div>
   `;
