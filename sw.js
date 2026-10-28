@@ -1,11 +1,11 @@
-const CACHE = 'furbis-v4';
+const CACHE = 'furbis-v5';
 const FILES = ['./', './index.html', './logo.png', './manifest.json'];
 
 self.addEventListener('install', e => {
   // Каждый файл кэшируем отдельно: если одного нет, остальные всё равно сохранятся
   e.waitUntil(
     caches.open(CACHE).then(cache =>
-      Promise.allSettled(FILES.map(f => cache.add(f)))
+      Promise.allSettled(FILES.map(f => cache.add(new Request(f, { cache: 'reload' }))))
     )
   );
   self.skipWaiting();
@@ -34,7 +34,7 @@ self.addEventListener('fetch', e => {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(req, { ignoreSearch: true });
 
-    const refresh = fetch(req).then(resp => {
+    const refresh = fetch(req, { cache: 'no-cache' }).then(resp => {
       if (resp && resp.status === 200 && (resp.type === 'basic' || resp.type === 'cors')) {
         cache.put(req, resp.clone());
       }

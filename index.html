@@ -875,6 +875,15 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js')
     .then(()=>console.log('SW: офлайн-режим активен'))
     .catch(e=>console.warn('SW ошибка:',e));
+  // Вышла новая версия приложения: один раз перезагружаемся, если не открыта форма заказа
+  const hadController=!!navigator.serviceWorker.controller;
+  let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(!hadController||reloaded) return;
+    const ov=document.getElementById('overlay');
+    if(ov&&ov.classList.contains('open')) return;
+    reloaded=true;location.reload();
+  });
 }
 
 // Просим браузер не удалять локальные данные при нехватке места
