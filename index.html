@@ -228,7 +228,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
       </div>
     </div>
     <div id="client-debt-block"></div>
-    <div class="section-label">Материалы <button class="btn-small" onclick="showAddMaterial()">+ добавить</button></div>
+    <div class="section-label">Материалы (мои траты) <button class="btn-small" onclick="showAddMaterial()">+ добавить</button></div>
     <div id="materials-list"></div>
     <div id="add-material-form" style="display:none">
       <div class="add-row">
@@ -249,6 +249,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
       <input type="number" id="f-master-total" placeholder="Введите итоговую сумму за работу" oninput="renderMasterDebt()">
       <div class="field-hint">Укажите полную сумму — будет видно сколько ещё осталось выплатить</div>
     </div>
+    <div class="field">
+      <label>Аванс мастеру (% от суммы договора)</label>
+      <input type="number" id="f-master-adv" placeholder="Например, 70" min="0" max="100" oninput="renderMasterDebt()">
+      <div class="field-hint">Аванс сразу вычитается из «Остатка денег». Материалы, купленные для мастера, вносите ниже в «Материалы мастера»: они входят в аванс.</div>
+    </div>
     <div id="payments-list"></div>
     <div id="add-payment-form" style="display:none">
       <div class="add-row">
@@ -260,6 +265,21 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
         <button class="btn-confirm" onclick="addPayment()">Добавить</button>
       </div>
     </div>
+    <div class="section-label">Материалы мастера <button class="btn-small" onclick="showAddMMat()">+ добавить</button></div>
+    <div id="mmats-list"></div>
+    <div id="add-mmat-form" style="display:none">
+      <div class="add-row">
+        <div class="add-row-grid">
+          <input type="text" id="amm-name" placeholder="Название материала">
+          <input type="number" id="amm-cost" placeholder="Сумма ₽">
+        </div>
+        <div class="add-row-grid">
+          <input type="date" id="amm-date">
+          <input type="text" id="amm-note" placeholder="Примечание">
+        </div>
+        <button class="btn-confirm" onclick="addMMat()">Добавить</button>
+      </div>
+    </div>
     <div id="master-debt-block"></div>
     <button class="btn-save" onclick="saveOrder()">Сохранить заказ</button>
     <button class="btn-danger" id="btn-delete" style="display:none" onclick="deleteOrder()">Удалить заказ</button>
@@ -269,7 +289,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 <script>
 let orders = JSON.parse(localStorage.getItem('furniture_orders2') || '[]');
 let editingId = null;
-let tempItems=[], tempMats=[], tempPays=[], tempClientPays=[];
+let tempItems=[], tempMats=[], tempMM=[], tempPays=[], tempClientPays=[];
 
 let saveSeq=0;
 function save(){
@@ -296,15 +316,27 @@ function calcTax(o){
   const received=paidSum(o.clientPayments);
   return Math.round((received>0?received:orderPrice(o))*0.06);
 }
-function calcProfit(o){return orderPrice(o)-(o.materials||[]).reduce((s,m)=>s+Number(m.cost||0),0)-paidSum(o.payments);}
+function calcProfit(o){return orderPrice(o)-(o.materials||[]).reduce((s,m)=>s+Number(m.cost||0),0)-(o.masterMaterials||[]).reduce((s,m)=>s+Number(m.cost||0),0)-paidSum(o.payments);}
 function calcProfitAfterTax(o){return calcProfit(o)-calcTax(o);}
 // Остаток денег: что реально осталось на руках из полученных от клиента денег
 // = получено − налог 6% с полученного − материалы − выплаты мастеру
+// «Материалы» — личные траты. «Материалы мастера» — то, что вы купили для мастера:
+// они входят в его аванс и уменьшают долг перед ним.
+// Если у заказа задан аванс мастеру, он вычитается сразу и целиком. Если материалы мастера
+// + выплаты окажутся больше аванса, вычитается фактическая сумма.
+function matsSum(o){return(o.materials||[]).reduce((s,m)=>s+Number(m.cost||0),0);}
+function mmSum(o){return(o.masterMaterials||[]).reduce((s,m)=>s+Number(m.cost||0),0);}
+function masterAdvance(o){return Math.round(Number(o.masterTotal||0)*Number(o.masterAdvPct||0)/100);}
+function masterOutlay(o){return Math.max(masterAdvance(o),mmSum(o)+paidSum(o.payments));}
+// Сколько из аванса ещё нужно отдать мастеру (аванс − материалы мастера − уже выданное)
+function advanceLeft(o){return masterAdvance(o)-mmSum(o)-paidSum(o.payments);}
+// Сколько по договору с мастером уже закрыто: выплаты + купленные для него материалы
+function masterSettled(o){return paidSum(o.payments)+mmSum(o);}
+function masterDebtOf(o){return Number(o.masterTotal||0)-masterSettled(o);}
 function calcCash(o){
   const received=paidSum(o.clientPayments);
   const taxReceived=Math.round(received*0.06);
-  const mats=(o.materials||[]).reduce((s,m)=>s+Number(m.cost||0),0);
-  return received-taxReceived-mats-paidSum(o.payments);
+  return received-taxReceived-matsSum(o)-masterOutlay(o);
 }
 
 function showPage(name){
@@ -327,7 +359,7 @@ function renderOrders(){
     const profitNet=calcProfitAfterTax(o);
     const cash=calcCash(o);
     const clientDebt=price-paidSum(o.clientPayments);
-    const masterDebt=Number(o.masterTotal||0)-paidSum(o.payments);
+    const masterDebt=masterDebtOf(o);
     const items=(o.items||[]).map(i=>i.name).join(', ')||'Без позиций';
     let badges='';
     if(clientDebt>0) badges+=`<span class="debt-badge db-client">Клиент должен: ${fmt(clientDebt)} ₽</span>`;
@@ -359,13 +391,17 @@ function renderOrders(){
 function openDetail(id){
   const o=orders.find(x=>x.id===id);if(!o) return;
   const price=orderPrice(o);
-  const mats=(o.materials||[]).reduce((s,m)=>s+Number(m.cost||0),0);
+  const mats=matsSum(o);
+  const mm=mmSum(o);
   const paidM=paidSum(o.payments);
   const masterTotal=Number(o.masterTotal||0);
-  const masterDebt=masterTotal-paidM;
+  const masterDebt=masterDebtOf(o);
+  const adv=masterAdvance(o);
+  const advLeft=advanceLeft(o);
+  const outlay=masterOutlay(o);
   const paidC=paidSum(o.clientPayments);
   const clientDebt=price-paidC;
-  const profit=price-mats-paidM;
+  const profit=price-mats-mm-paidM;
   const tax=Math.round(price*0.06);
   const profitNet=profit-tax;
   const taxReceived=Math.round(paidC*0.06);
@@ -380,12 +416,15 @@ function openDetail(id){
       <div class="detail-section-title">Финансы</div>
       <div class="summary-grid">
         <div class="sum-card"><div class="sc-label">Стоимость заказа</div><div class="sc-val blue">${fmt(price)} ₽</div></div>
-        <div class="sum-card"><div class="sc-label">Материалы</div><div class="sc-val">${fmt(mats)} ₽</div></div>
+        <div class="sum-card"><div class="sc-label">Мои материалы</div><div class="sc-val">${fmt(mats)} ₽</div></div>
+        ${adv>0?`<div class="sum-card"><div class="sc-label">Аванс мастеру (${Number(o.masterAdvPct)}%)</div><div class="sc-val purple">${fmt(adv)} ₽</div></div>
+        <div class="sum-card"><div class="sc-label">Материалы мастера</div><div class="sc-val">${fmt(mm)} ₽</div></div>
+        <div class="sum-card wide" style="border:1px solid rgba(180,142,249,0.35);background:rgba(180,142,249,0.07);"><div class="sc-label">${advLeft>=0?'Отдать мастеру из аванса':'Перерасход аванса'}</div><div class="sc-val ${advLeft>=0?'purple':'red'}" style="font-size:20px;">${fmt(Math.abs(advLeft))} ₽</div><div class="sc-hint">аванс ${fmt(adv)} − материалы мастера ${fmt(mm)}${paidM>0?' − выдано '+fmt(paidM):''}</div></div>`:(mm>0?`<div class="sum-card wide"><div class="sc-label">Материалы мастера</div><div class="sc-val">${fmt(mm)} ₽</div></div>`:'')}
         <div class="sum-card"><div class="sc-label">Выплачено мастеру</div><div class="sc-val">${fmt(paidM)} ₽</div></div>
         <div class="sum-card"><div class="sc-label">Налог УСН 6%</div><div class="sc-val red">−${fmt(tax)} ₽</div></div>
         <div class="sum-card"><div class="sc-label">Прибыль до налога</div><div class="sc-val ${profit>=0?'green':'red'}">${profit>=0?'+':''}${fmt(profit)} ₽</div></div>
         <div class="sum-card" style="border:1px solid rgba(62,207,142,0.3);background:rgba(62,207,142,0.06);"><div class="sc-label">Прибыль после налога</div><div class="sc-val ${profitNet>=0?'green':'red'}">${profitNet>=0?'+':''}${fmt(profitNet)} ₽</div></div>
-        <div class="sum-card wide" style="border:1px solid rgba(79,156,249,0.35);background:rgba(79,156,249,0.07);"><div class="sc-label">💰 Остаток денег</div><div class="sc-val ${cash>=0?'green':'red'}" style="font-size:20px;">${fmt(cash)} ₽</div><div class="sc-hint">Получено ${fmt(paidC)} − налог ${fmt(taxReceived)} − материалы ${fmt(mats)} − мастеру ${fmt(paidM)}</div></div>
+        <div class="sum-card wide" style="border:1px solid rgba(79,156,249,0.35);background:rgba(79,156,249,0.07);"><div class="sc-label">💰 Остаток денег</div><div class="sc-val ${cash>=0?'green':'red'}" style="font-size:20px;">${fmt(cash)} ₽</div><div class="sc-hint">Получено ${fmt(paidC)} − налог ${fmt(taxReceived)} − мои материалы ${fmt(mats)} − ${adv>0?'аванс мастеру (с его материалами)':'мастеру и его материалы'} ${fmt(outlay)}</div></div>
       </div>
     </div>`;
 
@@ -415,8 +454,14 @@ function openDetail(id){
   }
 
   if(o.materials&&o.materials.length){
-    html+=`<div class="detail-section"><div class="detail-section-title">Материалы</div>`;
+    html+=`<div class="detail-section"><div class="detail-section-title">Мои материалы</div>`;
     o.materials.forEach(m=>{html+=`<div class="detail-row"><span class="dr-label">${m.name}${m.note?' · '+m.note:''}${m.date?' · '+fmtD(m.date):''}</span><span class="dr-val">${fmt(m.cost)} ₽</span></div>`;});
+    html+=`</div>`;
+  }
+
+  if(o.masterMaterials&&o.masterMaterials.length){
+    html+=`<div class="detail-section"><div class="detail-section-title">Материалы мастера</div>`;
+    o.masterMaterials.forEach(m=>{html+=`<div class="detail-row"><span class="dr-label">${m.name}${m.note?' · '+m.note:''}${m.date?' · '+fmtD(m.date):''}</span><span class="dr-val">${fmt(m.cost)} ₽</span></div>`;});
     html+=`</div>`;
   }
 
@@ -424,10 +469,19 @@ function openDetail(id){
   if(o.payments&&o.payments.length){
     o.payments.forEach(p=>{html+=`<div class="detail-row"><span class="dr-label">${p.note||'Выплата'}${p.date?' · '+fmtD(p.date):''}</span><span class="dr-val">${fmt(p.amount)} ₽</span></div>`;});
   } else {html+=`<div style="font-size:13px;color:var(--muted);">Выплат не записано</div>`;}
+  if(adv>0){
+    html+=`<div class="prog-wrap" style="margin-bottom:10px;">
+      <div class="detail-row"><span class="dr-label">Аванс мастеру (${Number(o.masterAdvPct)}% от ${fmt(masterTotal)} ₽)</span><span class="dr-val">${fmt(adv)} ₽</span></div>
+      <div class="detail-row"><span class="dr-label">Материалы мастера</span><span class="dr-val">−${fmt(mm)} ₽</span></div>
+      ${paidM>0?`<div class="detail-row"><span class="dr-label">Уже выдано мастеру</span><span class="dr-val">−${fmt(paidM)} ₽</span></div>`:''}
+      <div class="detail-row" style="font-weight:600;"><span class="dr-label">${advLeft>=0?'Осталось отдать из аванса':'Перерасход аванса'}</span><span class="dr-val" style="color:${advLeft>=0?'var(--purple)':'var(--red)'};">${fmt(Math.abs(advLeft))} ₽</span></div>
+    </div>`;
+  }
   if(masterTotal>0){
+    const settled=masterSettled(o);
     html+=`<div class="prog-wrap">
-      <div class="prog-label"><span>Выплачено: ${fmt(paidM)} ₽ из ${fmt(masterTotal)} ₽</span><span style="color:${masterDebt<=0?'var(--green)':'var(--purple)'}">${masterDebt<=0?'Полностью выплачено ✓':'Осталось: '+fmt(masterDebt)+' ₽'}</span></div>
-      <div class="prog-track"><div class="prog-fill" style="width:${Math.min(paidM/masterTotal*100,100)}%;background:${masterDebt<=0?'var(--green)':'var(--purple)'};"></div></div>
+      <div class="prog-label"><span>${adv>0?'Выплачено и материалы':'Выплачено'}: ${fmt(settled)} ₽ из ${fmt(masterTotal)} ₽</span><span style="color:${masterDebt<=0?'var(--green)':'var(--purple)'}">${masterDebt<=0?'Полностью выплачено ✓':'Осталось: '+fmt(masterDebt)+' ₽'}</span></div>
+      <div class="prog-track"><div class="prog-fill" style="width:${Math.max(0,Math.min(settled/masterTotal*100,100))}%;background:${masterDebt<=0?'var(--green)':'var(--purple)'};"></div></div>
     </div>`;
   }
   html+=`</div>`;
@@ -442,14 +496,15 @@ function renderStats(){
   const el=document.getElementById('stats-content');
   if(!orders.length){el.innerHTML='<div class="empty"><span>📊</span>Нет данных.</div>';return;}
   const total=orders.reduce((s,o)=>s+orderPrice(o),0);
-  const totalMats=orders.reduce((s,o)=>s+(o.materials||[]).reduce((m,x)=>m+Number(x.cost||0),0),0);
+  const totalMats=orders.reduce((s,o)=>s+matsSum(o),0);
+  const totalMM=orders.reduce((s,o)=>s+mmSum(o),0);
   const totalPays=orders.reduce((s,o)=>s+paidSum(o.payments),0);
   const totalTax=orders.reduce((s,o)=>s+calcTax(o),0);
-  const totalProfit=total-totalMats-totalPays;
+  const totalProfit=total-totalMats-totalMM-totalPays;
   const totalProfitNet=totalProfit-totalTax;
   const totalCash=orders.reduce((s,o)=>s+calcCash(o),0);
   const clientDebtTotal=orders.reduce((s,o)=>s+Math.max(0,orderPrice(o)-paidSum(o.clientPayments)),0);
-  const masterDebtTotal=orders.reduce((s,o)=>s+Math.max(0,Number(o.masterTotal||0)-paidSum(o.payments)),0);
+  const masterDebtTotal=orders.reduce((s,o)=>s+Math.max(0,masterDebtOf(o)),0);
   const done=orders.filter(o=>o.status==='done').length;
   const inWork=orders.filter(o=>o.status==='work').length;
   el.innerHTML=`
@@ -458,7 +513,7 @@ function renderStats(){
     <div class="stat-card"><div class="stat-label">Выполнено</div><div class="stat-val green">${done}</div></div>
     <div class="stat-card"><div class="stat-label">Общая выручка</div><div class="stat-val blue">${fmt(total)} ₽</div></div>
     <div class="stat-card"><div class="stat-label">Расходы на материалы</div><div class="stat-val">${fmt(totalMats)} ₽</div></div>
-    <div class="stat-card"><div class="stat-label">Выплачено мастерам</div><div class="stat-val">${fmt(totalPays)} ₽</div></div>
+    <div class="stat-card"><div class="stat-label">Выплачено мастерам<div style="font-size:10px;margin-top:3px;">вкл. материалы мастеров</div></div><div class="stat-val">${fmt(totalPays+totalMM)} ₽</div></div>
     <div class="stat-card"><div class="stat-label">Налог УСН 6%</div><div class="stat-val red">−${fmt(totalTax)} ₽</div></div>
     <div class="stat-card"><div class="stat-label">Прибыль до налога</div><div class="stat-val ${totalProfit>=0?'green':'red'}">${totalProfit>=0?'+':''}${fmt(totalProfit)} ₽</div></div>
     <div class="stat-card" style="border-color:rgba(62,207,142,0.3);background:rgba(62,207,142,0.04);"><div class="stat-label">Прибыль после налога</div><div class="stat-val ${totalProfitNet>=0?'green':'red'}">${totalProfitNet>=0?'+':''}${fmt(totalProfitNet)} ₽</div></div>
@@ -469,7 +524,7 @@ function renderStats(){
 }
 
 function openNew(){
-  editingId=null;tempItems=[];tempMats=[];tempPays=[];tempClientPays=[];
+  editingId=null;tempItems=[];tempMats=[];tempMM=[];tempPays=[];tempClientPays=[];
   document.getElementById('modal-title').textContent='Новый заказ';
   document.getElementById('f-client').value='';
   document.getElementById('f-status').value='new';
@@ -478,6 +533,7 @@ function openNew(){
   document.getElementById('f-date-actual').value='';
   document.getElementById('f-note').value='';
   document.getElementById('f-master-total').value='';
+  document.getElementById('f-master-adv').value='70';
   document.getElementById('btn-delete').style.display='none';
   renderTempLists();
   document.getElementById('overlay').classList.add('open');
@@ -488,6 +544,7 @@ function openEdit(id){
   editingId=id;
   tempItems=JSON.parse(JSON.stringify(o.items||[]));
   tempMats=JSON.parse(JSON.stringify(o.materials||[]));
+  tempMM=JSON.parse(JSON.stringify(o.masterMaterials||[]));
   tempPays=JSON.parse(JSON.stringify(o.payments||[]));
   tempClientPays=JSON.parse(JSON.stringify(o.clientPayments||[]));
   document.getElementById('modal-title').textContent='Редактировать';
@@ -498,6 +555,7 @@ function openEdit(id){
   document.getElementById('f-date-actual').value=o.dateActual||'';
   document.getElementById('f-note').value=o.note||'';
   document.getElementById('f-master-total').value=o.masterTotal||'';
+  document.getElementById('f-master-adv').value=o.masterAdvPct||'';
   document.getElementById('btn-delete').style.display='block';
   renderTempLists();
   document.getElementById('overlay').classList.add('open');
@@ -518,7 +576,8 @@ function saveOrder(){
     dateActual:document.getElementById('f-date-actual').value,
     note:document.getElementById('f-note').value.trim(),
     masterTotal:document.getElementById('f-master-total').value||0,
-    items:[...tempItems],materials:[...tempMats],payments:[...tempPays],clientPayments:[...tempClientPays],
+    masterAdvPct:document.getElementById('f-master-adv').value||0,
+    items:[...tempItems],materials:[...tempMats],masterMaterials:[...tempMM],payments:[...tempPays],clientPayments:[...tempClientPays],
   };
   if(editingId){orders[orders.findIndex(x=>x.id===editingId)]=order;}
   else{orders.push(order);}
@@ -545,6 +604,8 @@ function renderTempLists(){
   renderClientDebt();
   document.getElementById('materials-list').innerHTML=tempMats.map((m,i)=>
     `<div class="row-item"><div><div class="row-item-name">${m.name}</div><div class="row-item-detail">${fmt(m.cost)} ₽${m.date?' · '+fmtD(m.date):''}${m.note?' · '+m.note:''}</div></div><button class="row-del" onclick="removeMat(${i})">×</button></div>`).join('');
+  document.getElementById('mmats-list').innerHTML=tempMM.map((m,i)=>
+    `<div class="row-item"><div><div class="row-item-name">${m.name}</div><div class="row-item-detail">${fmt(m.cost)} ₽${m.date?' · '+fmtD(m.date):''}${m.note?' · '+m.note:''}</div></div><button class="row-del" onclick="removeMMat(${i})">×</button></div>`).join('');
   document.getElementById('payments-list').innerHTML=tempPays.map((p,i)=>
     `<div class="row-item"><div><div class="row-item-name">${p.note||'Выплата'}</div><div class="row-item-detail">${fmt(p.amount)} ₽${p.date?' · '+fmtD(p.date):''}</div></div><button class="row-del" onclick="removePay(${i})">×</button></div>`).join('');
   renderMasterDebt();
@@ -562,17 +623,25 @@ function renderClientDebt(){
 
 function renderMasterDebt(){
   const mt=Number(document.getElementById('f-master-total').value||0);
-  const paid=paidSum(tempPays);
-  const debt=mt-paid;
+  const tmp={masterTotal:mt,masterAdvPct:Number(document.getElementById('f-master-adv').value||0),masterMaterials:tempMM,payments:tempPays};
+  const debt=masterDebtOf(tmp);
+  const adv=masterAdvance(tmp);
+  const left=advanceLeft(tmp);
   const el=document.getElementById('master-debt-block');
+  let h='';
+  if(adv>0){
+    h+=`<div class="debt-row-purple"><span>Аванс ${fmt(adv)} ₽ − материалы мастера ${fmt(mmSum(tmp))} ₽${paidSum(tempPays)>0?' − выдано '+fmt(paidSum(tempPays))+' ₽':''}</span><strong style="color:${left>=0?'var(--purple)':'var(--red)'}">${left>=0?'Отдать из аванса '+fmt(left)+' ₽':'Перерасход '+fmt(-left)+' ₽'}</strong></div>`;
+  }
   if(mt>0){
-    el.innerHTML=`<div class="debt-row-purple"><span>Выплачено: ${fmt(paid)} ₽ из ${fmt(mt)} ₽</span><strong style="color:${debt<=0?'var(--green)':'var(--purple)'}">${debt<=0?'Полностью выплачено ✓':'Осталось '+fmt(debt)+' ₽'}</strong></div>`;
-  } else {el.innerHTML='';}
+    h+=`<div class="debt-row-purple"><span>${adv>0?'Выплачено и материалы':'Выплачено'}: ${fmt(masterSettled(tmp))} ₽ из ${fmt(mt)} ₽</span><strong style="color:${debt<=0?'var(--green)':'var(--purple)'}">${debt<=0?'Полностью выплачено ✓':'Осталось '+fmt(debt)+' ₽'}</strong></div>`;
+  }
+  el.innerHTML=h;
 }
 
 function showAddItem(){document.getElementById('add-item-form').style.display='block';document.getElementById('ai-name').focus();}
 function showAddClientPay(){document.getElementById('add-client-pay-form').style.display='block';document.getElementById('acp-amount').focus();}
 function showAddMaterial(){document.getElementById('add-material-form').style.display='block';document.getElementById('am-name').focus();}
+function showAddMMat(){document.getElementById('add-mmat-form').style.display='block';document.getElementById('amm-name').focus();}
 function showAddPayment(){document.getElementById('add-payment-form').style.display='block';document.getElementById('ap-amount').focus();}
 
 function addItem(){
@@ -602,6 +671,13 @@ function addPayment(){
 function removeItem(i){tempItems.splice(i,1);renderTempLists();}
 function removeClientPay(i){tempClientPays.splice(i,1);renderTempLists();}
 function removeMat(i){tempMats.splice(i,1);renderTempLists();}
+function removeMMat(i){tempMM.splice(i,1);renderTempLists();}
+function addMMat(){
+  const name=document.getElementById('amm-name').value.trim();if(!name) return;
+  tempMM.push({name,cost:document.getElementById('amm-cost').value||0,date:document.getElementById('amm-date').value,note:document.getElementById('amm-note').value.trim()});
+  document.getElementById('amm-name').value='';document.getElementById('amm-cost').value='';document.getElementById('amm-date').value='';document.getElementById('amm-note').value='';
+  document.getElementById('add-mmat-form').style.display='none';renderTempLists();
+}
 function removePay(i){tempPays.splice(i,1);renderTempLists();}
 
 // ---- СИНХРОНИЗАЦИЯ ЧЕРЕЗ GITHUB GIST ----
