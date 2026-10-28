@@ -1,0 +1,15 @@
+{
+  "name": "Furbis Design",
+  "short_name": "Furbis",
+  "description": "Учёт заказов Furbis Design",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0f12",
+  "theme_color": "#0d0f12",
+  "icons": [
+    { "src": "logo.png", "sizes": "1024x1024", "purpose": "any" }
+  ]
+}

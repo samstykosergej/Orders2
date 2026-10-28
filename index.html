@@ -271,11 +271,17 @@ let orders = JSON.parse(localStorage.getItem('furniture_orders2') || '[]');
 let editingId = null;
 let tempItems=[], tempMats=[], tempPays=[], tempClientPays=[];
 
+let saveSeq=0;
 function save(){
   localStorage.setItem('furniture_orders2',JSON.stringify(orders));
   const s=getSyncSettings();
-  if(s.token && s.gistId) autoSyncSave();
+  if(s.token && s.gistId){
+    saveSeq++;
+    localStorage.setItem('furniture_sync_dirty','1'); // есть изменения, которые ещё не ушли в облако
+    autoSyncSave();
+  }
 }
+function isSyncDirty(){return localStorage.getItem('furniture_sync_dirty')==='1';}
 function fmt(n){return Number(n||0).toLocaleString('ru-RU');}
 function fmtD(d){if(!d)return '';const[y,m,day]=d.split('-');return day+'.'+m+'.'+y;}
 function statusLabel(s){
@@ -606,16 +612,25 @@ function showSyncIndicator(state){
   if(state==='saving') btn.textContent='⏳ СИНХ';
   else if(state==='ok') btn.textContent='✅ СИНХ';
   else if(state==='err') btn.textContent='❌ СИНХ';
+  else if(state==='pending') btn.textContent='🕓 СИНХ';
   else btn.textContent='☁️ СИНХ';
-  if(state==='ok'||state==='err') setTimeout(()=>btn.textContent='☁️ СИНХ',3000);
+  if(state==='ok'||state==='err') setTimeout(()=>{btn.textContent=isSyncDirty()?'🕓 СИНХ':'☁️ СИНХ';},3000);
 }
 
 function autoSyncSave(){
   clearTimeout(autoSyncTimer);
+  const s0=getSyncSettings();
+  if(!s0.token||!s0.gistId) return;
+  // Нет интернета: ничего не теряем, изменения ждут в очереди и уйдут, когда сеть появится
+  if(!navigator.onLine){
+    showSyncIndicator('pending');
+    return;
+  }
   showSyncIndicator('saving');
   autoSyncTimer=setTimeout(async()=>{
     const s=getSyncSettings();
     if(!s.token||!s.gistId) return;
+    const seqAtSend=saveSeq;
     try {
       const content=JSON.stringify(orders,null,2);
       const resp=await fetch(`https://api.github.com/gists/${s.gistId}`,{
@@ -624,14 +639,26 @@ function autoSyncSave(){
         body:JSON.stringify({files:{'orders.json':{content}}})
       });
       if(!resp.ok) throw new Error(resp.status);
+      // Флаг снимаем, только если за время отправки данные не менялись
+      if(seqAtSend===saveSeq) localStorage.removeItem('furniture_sync_dirty');
       showSyncIndicator('ok');
       syncLog('☁️ Автосохранено · '+new Date().toLocaleTimeString('ru-RU'));
     } catch(e){
-      showSyncIndicator('err');
-      syncLog('❌ Автосохранение не удалось: '+e.message);
+      // Данные остаются в очереди (флаг dirty), повторим позже
+      showSyncIndicator(navigator.onLine?'err':'pending');
+      syncLog('❌ Автосохранение не удалось, повторю позже: '+e.message);
     }
   },1500);
 }
+
+// Повторная отправка накопленных изменений, когда интернет вернулся
+function retryPendingSync(){
+  const s=getSyncSettings();
+  if(isSyncDirty() && s.token && s.gistId && navigator.onLine) autoSyncSave();
+}
+window.addEventListener('online',retryPendingSync);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden) retryPendingSync();});
+setInterval(retryPendingSync,60000);
 
 function getSyncSettings(){
   return{token:localStorage.getItem('gist_token')||'',gistId:localStorage.getItem('gist_id')||''};
@@ -683,6 +710,7 @@ function setSyncLoading(text){
 async function syncSave(){
   const token=document.getElementById('s-token').value.trim()||getSyncSettings().token;
   if(!token){alert('Введите GitHub токен');return;}
+  if(!navigator.onLine){alert('Нет интернета. Данные сохранены на устройстве и уйдут в облако, когда сеть появится.');return;}
   setSyncLoading('Сохранение в облако...');
   syncLog('⏳ Сохраняю данные...');
   try{
@@ -699,6 +727,7 @@ async function syncSave(){
       document.getElementById('s-gist-id').value=data.id;syncLog('🆕 Gist создан: '+data.id);
     }
     localStorage.setItem('gist_token',token);
+    localStorage.removeItem('furniture_sync_dirty');
     const updatedAt=new Date(data.updated_at).toLocaleString('ru-RU');
     syncLog('☁️ Сохранено · '+updatedAt);
     document.getElementById('sync-status-bar').className='sync-status ok';
@@ -715,7 +744,9 @@ async function syncLoad(){
   const gistId=document.getElementById('s-gist-id').value.trim()||getSyncSettings().gistId;
   if(!token){alert('Введите GitHub токен');return;}
   if(!gistId){alert('Введите Gist ID');return;}
-  if(!confirm('Загрузить данные из облака? Текущие данные будут заменены.')) return;
+  if(!navigator.onLine){alert('Нет интернета. Загрузка из облака недоступна.');return;}
+  const warn=isSyncDirty()?'ВНИМАНИЕ: есть изменения, которые ещё не отправлены в облако, они будут потеряны.\n\n':'';
+  if(!confirm(warn+'Загрузить данные из облака? Текущие данные будут заменены.')) return;
   setSyncLoading('Загрузка из облака...');syncLog('⏳ Загружаю...');
   try{
     const resp=await fetch(`https://api.github.com/gists/${gistId}`,{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}});
@@ -723,7 +754,9 @@ async function syncLoad(){
     const data=await resp.json();
     const file=data.files['orders.json'];
     if(!file) throw new Error('Файл orders.json не найден в Gist');
-    orders=JSON.parse(file.content);save();
+    orders=JSON.parse(file.content);
+    localStorage.setItem('furniture_orders2',JSON.stringify(orders));
+    localStorage.removeItem('furniture_sync_dirty');
     const updatedAt=new Date(data.updated_at).toLocaleString('ru-RU');
     syncLog('✅ Загружено '+orders.length+' заказов · '+updatedAt);
     document.getElementById('sync-status-bar').className='sync-status ok';
@@ -744,7 +777,7 @@ function updateOnlineStatus(){
       banner=document.createElement('div');
       banner.id='offline-banner';
       banner.className='offline-banner';
-      banner.textContent='📵 Офлайн — данные сохраняются локально';
+      banner.textContent='📵 Офлайн — всё сохраняется на устройстве, в облако уйдёт позже';
       document.body.appendChild(banner);
     }
   } else {if(banner) banner.remove();}
@@ -760,7 +793,11 @@ if('serviceWorker' in navigator){
     .catch(e=>console.warn('SW ошибка:',e));
 }
 
+// Просим браузер не удалять локальные данные при нехватке места
+if(navigator.storage && navigator.storage.persist){navigator.storage.persist().catch(()=>{});}
+
 renderOrders();
+if(isSyncDirty()) setTimeout(retryPendingSync,3000);
 </script>
 </body>
 </html>

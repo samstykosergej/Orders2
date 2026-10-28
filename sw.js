@@ -1,32 +1,59 @@
-const CACHE = 'furbis-v3';
-const FILES = ['./', './index.html', './logo.png'];
+const CACHE = 'furbis-v4';
+const FILES = ['./', './index.html', './logo.png', './manifest.json'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES).catch(()=>{})));
+  // Каждый файл кэшируем отдельно: если одного нет, остальные всё равно сохранятся
+  e.waitUntil(
+    caches.open(CACHE).then(cache =>
+      Promise.allSettled(FILES.map(f => cache.add(f)))
+    )
+  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    )
+  );
   self.clients.claim();
 });
 
-// Сначала сеть (всегда свежая версия), кэш — только когда нет интернета
+// Сначала кэш (мгновенный запуск даже при плохом или пропавшем интернете),
+// параллельно в фоне обновляем кэш — свежая версия подтянется при следующем запуске.
 self.addEventListener('fetch', e => {
-  if(e.request.method!=='GET') return;
-  if(e.request.url.includes('api.github.com')){e.respondWith(fetch(e.request));return;}
-  e.respondWith(
-    fetch(e.request, {cache:'no-cache'}).then(response => {
-      if(response && response.status===200){
-        const clone=response.clone();
-        caches.open(CACHE).then(cache=>cache.put(e.request,clone));
+  const req = e.request;
+  if (req.method !== 'GET') return;
+
+  const url = new URL(req.url);
+  // Синхронизация с облаком — всегда напрямую в сеть, без кэша
+  if (url.hostname === 'api.github.com') return;
+
+  e.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    const cached = await cache.match(req, { ignoreSearch: true });
+
+    const refresh = fetch(req).then(resp => {
+      if (resp && resp.status === 200 && (resp.type === 'basic' || resp.type === 'cors')) {
+        cache.put(req, resp.clone());
       }
-      return response;
-    }).catch(()=>
-      caches.match(e.request).then(cached => {
-        if(cached) return cached;
-        if(e.request.mode==='navigate') return caches.match('./index.html');
-      })
-    )
-  );
+      return resp;
+    }).catch(() => null);
+
+    if (cached) {
+      e.waitUntil(refresh); // обновление в фоне, не блокирует ответ
+      return cached;
+    }
+
+    const resp = await refresh;
+    if (resp) return resp;
+
+    // Нет ни кэша, ни сети: для открытия страницы отдаём главный экран
+    if (req.mode === 'navigate') {
+      const home = (await cache.match('./index.html')) || (await cache.match('./'));
+      if (home) return home;
+    }
+    return new Response('', { status: 504, statusText: 'Offline' });
+  })());
 });
